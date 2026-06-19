@@ -16,8 +16,11 @@ const DIR_DELTA: Record<Direction, { dx: number; dy: number }> = {
   right: { dx:  1, dy:  0 },
 };
 
+// Animation frame base per direction (frame = base + 0/1/2)
+const ANIM_BASE: Record<Direction, number> = { down: 0, up: 3, left: 6, right: 9 };
+
 export class WorldScene extends Phaser.Scene {
-  private player!: Phaser.GameObjects.Rectangle;
+  private player!: Phaser.GameObjects.Sprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<Direction, Phaser.Input.Keyboard.Key>;
   private groundLayer!: Phaser.Tilemaps.TilemapLayer;
@@ -47,14 +50,15 @@ export class WorldScene extends Phaser.Scene {
 
     this.groundLayer = map.createLayer(0, tileset, 0, 0)!;
 
-    // ── Player (placeholder rectangle until sprites are loaded) ────────────
-    this.player = this.add.rectangle(
+    // ── Player sprite ──────────────────────────────────────────────────────
+    this.player = this.add.sprite(
       this.tileX * TILE_SIZE + TILE_SIZE / 2,
       this.tileY * TILE_SIZE + TILE_SIZE / 2,
-      TILE_SIZE - 2,
-      TILE_SIZE - 2,
-      0xff2222,
-    );
+      "player",
+      0,
+    ).setDepth(1);
+
+    this.registerAnimations();
 
     // ── Camera ─────────────────────────────────────────────────────────────
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
@@ -81,6 +85,26 @@ export class WorldScene extends Phaser.Scene {
 
   // ── Private ──────────────────────────────────────────────────────────────
 
+  private registerAnimations() {
+    const dirs: Direction[] = ["down", "up", "left", "right"];
+    for (const dir of dirs) {
+      const b = ANIM_BASE[dir];
+      this.anims.create({
+        key: `walk-${dir}`,
+        frames: this.anims.generateFrameNumbers("player", { frames: [b, b + 1, b, b + 2] }),
+        frameRate: 8,
+        repeat: -1,
+      });
+      this.anims.create({
+        key: `idle-${dir}`,
+        frames: this.anims.generateFrameNumbers("player", { start: b, end: b }),
+        frameRate: 1,
+        repeat: 0,
+      });
+    }
+    this.player.play("idle-down");
+  }
+
   private readInput(): Direction | null {
     if (this.cursors.up.isDown    || this.wasd.up.isDown)    return "up";
     if (this.cursors.down.isDown  || this.wasd.down.isDown)  return "down";
@@ -101,11 +125,16 @@ export class WorldScene extends Phaser.Scene {
     const nx = this.tileX + dx;
     const ny = this.tileY + dy;
 
+    // Always face the attempted direction, even if blocked
+    this.player.play(`idle-${dir}`, true);
+
     if (!this.isWalkable(nx, ny)) return;
 
     this.tileX = nx;
     this.tileY = ny;
     this.isMoving = true;
+
+    this.player.play(`walk-${dir}`, true);
 
     this.tweens.add({
       targets: this.player,
@@ -113,7 +142,10 @@ export class WorldScene extends Phaser.Scene {
       y: this.tileY * TILE_SIZE + TILE_SIZE / 2,
       duration: MOVE_DURATION,
       ease: "Linear",
-      onComplete: () => { this.isMoving = false; },
+      onComplete: () => {
+        this.isMoving = false;
+        this.player.play(`idle-${this.direction}`, true);
+      },
     });
   }
 
