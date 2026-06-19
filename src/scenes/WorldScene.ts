@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { type Direction } from "@/types";
-import { TILE_SIZE, ANIM_BASE, MS_PER_GAME_MINUTE, TILE_GRASS, TILE_PATH, TILE_TALLGRASS } from "@/constants";
+import { TILE_SIZE, ANIM_BASE, MS_PER_GAME_MINUTE, TILE_GRASS, TILE_PATH, TILE_TALLGRASS, TILE_CAVE_FLOOR } from "@/constants";
 import { ZONES, type ZoneDef, type NpcDef } from "@/data/zones";
 import type { BattleInitData } from "@/scenes/BattleScene";
 import { SCRIPTS } from "@/data/scripts";
@@ -57,6 +57,7 @@ export class WorldScene extends Phaser.Scene {
   direction: Direction = "down";
   isMoving = false;
   private dialogueLocked = false;
+  private interactCooldown = 0; // frames to block Z after dialogue closes
 
   // Day/night clock
   private gameHour = 8; // start at 8am (clear day)
@@ -109,7 +110,10 @@ export class WorldScene extends Phaser.Scene {
       .setDepth(10);
 
     // ── Global events ────────────────────────────────────────────────────────
-    this.game.events.on("dialogue:done", () => { this.dialogueLocked = false; }, this);
+    this.game.events.on("dialogue:done", () => {
+      this.dialogueLocked = false;
+      this.interactCooldown = 3; // block Z re-trigger for 3 frames after close
+    }, this);
 
     this.scene.launch("UIScene");
   }
@@ -119,7 +123,9 @@ export class WorldScene extends Phaser.Scene {
 
     if (this.dialogueLocked) return;
 
-    if (!this.isMoving && Phaser.Input.Keyboard.JustDown(this.actionKey)) {
+    if (this.interactCooldown > 0) {
+      this.interactCooldown--;
+    } else if (!this.isMoving && Phaser.Input.Keyboard.JustDown(this.actionKey)) {
       this.tryInteract();
       return;
     }
@@ -183,12 +189,16 @@ export class WorldScene extends Phaser.Scene {
   // ── NPC ───────────────────────────────────────────────────────────────────
 
   private spawnNpc(def: NpcDef): Phaser.GameObjects.Sprite {
-    return this.add.sprite(
+    const spriteKey = `npc-${def.id}`;
+    const key = this.textures.exists(spriteKey) ? spriteKey : "player";
+    const spr = this.add.sprite(
       def.tileX * TILE_SIZE + TILE_SIZE / 2,
       def.tileY * TILE_SIZE + TILE_SIZE / 2,
-      "player",
+      key,
       ANIM_BASE[def.facing],
-    ).setTint(def.tint).setDepth(1);
+    ).setDepth(1);
+    if (key === "player") spr.setTint(def.tint);
+    return spr;
   }
 
   // ── Movement ──────────────────────────────────────────────────────────────
@@ -204,7 +214,8 @@ export class WorldScene extends Phaser.Scene {
   private isWalkable(tx: number, ty: number): boolean {
     const tile = this.groundLayer.getTileAt(tx, ty);
     if (!tile) return false;
-    return tile.index === TILE_GRASS || tile.index === TILE_PATH || tile.index === TILE_TALLGRASS;
+    return tile.index === TILE_GRASS || tile.index === TILE_PATH
+        || tile.index === TILE_TALLGRASS || tile.index === TILE_CAVE_FLOOR;
   }
 
   private tryStep(dir: Direction): void {
@@ -247,7 +258,7 @@ export class WorldScene extends Phaser.Scene {
     // Check NPCs
     const npc = this.currentZone.npcs.find(n => n.tileX === tx && n.tileY === ty);
     if (npc) {
-      this.showDialogue(SCRIPTS[npc.scriptId] ?? [`[Missing script: ${npc.scriptId}]`]);
+      this.showDialogue(SCRIPTS[npc.scriptId] ?? [`[Missing script: ${npc.scriptId}]`], npc.name);
       return;
     }
 
@@ -258,9 +269,9 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  private showDialogue(pages: string[]): void {
+  private showDialogue(pages: string[], speaker?: string): void {
     this.dialogueLocked = true;
-    this.game.events.emit("dialogue:show", pages);
+    this.game.events.emit("dialogue:show", { pages, speaker });
   }
 
   // ── Wild encounters ───────────────────────────────────────────────────────

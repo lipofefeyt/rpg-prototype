@@ -13,6 +13,7 @@ export const TILE_TREE       = 1;
 export const TILE_PATH       = 2;
 export const TILE_WATER      = 3;
 export const TILE_TALLGRASS  = 4; // walkable, triggers wild encounters
+export const TILE_CAVE_FLOOR = 5; // dark stone floor used inside cave
 
 // Cave zone dimensions
 export const CAVE_COLS     = 25;

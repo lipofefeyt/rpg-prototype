@@ -1,15 +1,19 @@
 import Phaser from "phaser";
 
-const PAD    = 10;
-const BOX_H  = 74;
-const MARGIN = 8;
-const CHAR_DELAY_MS = 26; // typewriter speed
+const PAD           = 10;
+const BOX_H         = 74;
+const MARGIN        = 8;
+const SPEAKER_H     = 20;
+const SPEAKER_GAP   = 3;
+const CHAR_DELAY_MS = 26;
 
 export class DialogueBox {
   private readonly scene: Phaser.Scene;
   private readonly panel: Phaser.GameObjects.Graphics;
   private readonly textObj: Phaser.GameObjects.Text;
   private readonly arrow: Phaser.GameObjects.Text;
+  private readonly speakerPanel: Phaser.GameObjects.Graphics;
+  private readonly speakerLabel: Phaser.GameObjects.Text;
 
   private pages: string[] = [];
   private pageIndex = 0;
@@ -17,23 +21,41 @@ export class DialogueBox {
   private fullText = "";
   private typeTimer?: Phaser.Time.TimerEvent;
   private arrowTween?: Phaser.Tweens.Tween;
+  private hasSpeaker = false;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
-    const W = scene.scale.width;
-    const H = scene.scale.height;
+    const W    = scene.scale.width;
+    const H    = scene.scale.height;
     const boxW = W - MARGIN * 2;
     const boxX = MARGIN;
     const boxY = H - BOX_H - MARGIN;
 
-    // Panel background + border
+    // ── Speaker name panel ───────────────────────────────────────────────────
+    const spY = boxY - SPEAKER_H - SPEAKER_GAP;
+    this.speakerPanel = scene.add.graphics();
+    this.speakerPanel.fillStyle(0x08081a, 0.95);
+    this.speakerPanel.fillRoundedRect(boxX, spY, 90, SPEAKER_H, 3);
+    this.speakerPanel.lineStyle(2, 0x4488ff, 1);
+    this.speakerPanel.strokeRoundedRect(boxX, spY, 90, SPEAKER_H, 3);
+
+    this.speakerLabel = scene.add.text(boxX + 7, spY + 4, "", {
+      fontSize: "10px",
+      color: "#aaccff",
+      fontFamily: "monospace",
+      fontStyle: "bold",
+    });
+
+    // ── Main dialogue panel ──────────────────────────────────────────────────
     this.panel = scene.add.graphics();
     this.panel.fillStyle(0x08081a, 0.93);
     this.panel.fillRoundedRect(boxX, boxY, boxW, BOX_H, 4);
     this.panel.lineStyle(2, 0x4488ff, 1);
     this.panel.strokeRoundedRect(boxX, boxY, boxW, BOX_H, 4);
+    // Inner glow line (subtle highlight at top)
+    this.panel.lineStyle(1, 0x6699ff, 0.35);
+    this.panel.strokeRoundedRect(boxX + 2, boxY + 2, boxW - 4, BOX_H - 4, 3);
 
-    // Text (inside the box)
     this.textObj = scene.add.text(boxX + PAD, boxY + PAD, "", {
       fontSize: "11px",
       color: "#e8eeff",
@@ -42,29 +64,30 @@ export class DialogueBox {
       lineSpacing: 5,
     });
 
-    // Advance arrow ▼ — bottom-right of box
     this.arrow = scene.add.text(boxX + boxW - 14, boxY + BOX_H - 14, "▼", {
       fontSize: "9px",
       color: "#88aaff",
       fontFamily: "monospace",
     }).setVisible(false);
 
-    // Set depth so dialogue always renders above world and NPCs
-    [this.panel, this.textObj, this.arrow].forEach(o => o.setDepth(100));
+    const depth = 100;
+    [this.speakerPanel, this.speakerLabel, this.panel, this.textObj, this.arrow]
+      .forEach(o => o.setDepth(depth));
 
     this.setVisible(false);
   }
 
   get visible(): boolean { return this.panel.visible; }
 
-  show(pages: string[]): void {
+  show(pages: string[], speaker?: string): void {
     this.pages = pages;
     this.pageIndex = 0;
+    this.hasSpeaker = !!speaker;
+    this.speakerLabel.setText(speaker ?? "");
     this.setVisible(true);
     this.typePage(pages[0]);
   }
 
-  /** Called on confirm key press. Skips typewriter if running, else advances page. */
   advance(): void {
     if (this.isTyping) {
       this.skipTypewriter();
@@ -85,7 +108,7 @@ export class DialogueBox {
     this.scene.game.events.emit("dialogue:done");
   }
 
-  // ── Private ────────────────────────────────────────────────────────────────
+  // ── Private ─────────────────────────────────────────────────────────────────
 
   private typePage(text: string): void {
     this.fullText = text;
@@ -130,5 +153,7 @@ export class DialogueBox {
     this.panel.setVisible(v);
     this.textObj.setVisible(v);
     this.arrow.setVisible(v && !this.isTyping);
+    this.speakerPanel.setVisible(v && this.hasSpeaker);
+    this.speakerLabel.setVisible(v && this.hasSpeaker);
   }
 }

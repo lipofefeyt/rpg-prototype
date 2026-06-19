@@ -1,6 +1,7 @@
 import { type Direction } from "@/types";
 import {
-  TILE_GRASS as G, TILE_TREE as T, TILE_PATH as P, TILE_WATER as W, TILE_TALLGRASS as TG,
+  TILE_GRASS as G, TILE_TREE as T, TILE_PATH as P, TILE_WATER as W,
+  TILE_TALLGRASS as TG, TILE_CAVE_FLOOR as CF,
   MAP_COLS, MAP_ROWS, PATH_ROW, PATH_COL,
   CAVE_COLS, CAVE_ROWS, CAVE_EXIT_COL,
 } from "@/constants";
@@ -9,6 +10,7 @@ import {
 
 export interface NpcDef {
   id: string;
+  name: string;
   tileX: number;
   tileY: number;
   facing: Direction;
@@ -110,7 +112,7 @@ function buildOverworld(): number[][] {
 }
 
 function buildCave(): number[][] {
-  const m = Array.from({ length: CAVE_ROWS }, () => Array<number>(CAVE_COLS).fill(P));
+  const m = Array.from({ length: CAVE_ROWS }, () => Array<number>(CAVE_COLS).fill(CF));
 
   // Border walls
   for (let x = 0; x < CAVE_COLS; x++) { m[0][x] = T; m[CAVE_ROWS - 1][x] = T; }
@@ -135,7 +137,7 @@ function buildCave(): number[][] {
     for (let x = 9; x <= 14; x++)
       m[y][x] = W;
 
-  m[CAVE_ROWS - 2][CAVE_EXIT_COL] = P; // exit walkable
+  m[CAVE_ROWS - 2][CAVE_EXIT_COL] = CF; // exit tile (transition handled by coords)
   return m;
 }
 
@@ -150,9 +152,9 @@ export const ZONES: Record<string, ZoneDef> = {
     defaultSpawnX: PATH_COL,
     defaultSpawnY: PATH_ROW,
     npcs: [
-      { id: "elder",    tileX: 23, tileY: 18, facing: "right", scriptId: "npc_elder",    tint: 0xffddaa },
-      { id: "guard",    tileX: 27, tileY: 21, facing: "left",  scriptId: "npc_guard",    tint: 0xaabbff },
-      { id: "merchant", tileX: 23, tileY: 23, facing: "right", scriptId: "npc_merchant", tint: 0xaaffbb },
+      { id: "elder",    name: "Elder Oak",     tileX: 23, tileY: 18, facing: "right", scriptId: "npc_elder",    tint: 0xffddaa },
+      { id: "guard",    name: "Guard",         tileX: 27, tileY: 21, facing: "left",  scriptId: "npc_guard",    tint: 0xaabbff },
+      { id: "merchant", name: "Merchant",      tileX: 23, tileY: 23, facing: "right", scriptId: "npc_merchant", tint: 0xaaffbb },
     ],
     signs: [
       { tileX: 24, tileY: 19, scriptId: "sign_crossroads" },
@@ -180,7 +182,7 @@ export const ZONES: Record<string, ZoneDef> = {
     defaultSpawnX: CAVE_EXIT_COL,
     defaultSpawnY: CAVE_ROWS - 3,
     npcs: [
-      { id: "miner", tileX: 15, tileY: 8, facing: "left", scriptId: "npc_miner", tint: 0xffcc88 },
+      { id: "miner", name: "Miner Cole", tileX: 15, tileY: 8, facing: "left", scriptId: "npc_miner", tint: 0xffcc88 },
     ],
     signs: [
       { tileX: CAVE_EXIT_COL, tileY: CAVE_ROWS - 4, scriptId: "sign_cave_exit" },
