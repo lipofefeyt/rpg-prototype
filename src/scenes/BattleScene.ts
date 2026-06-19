@@ -66,7 +66,8 @@ export class BattleScene extends Phaser.Scene {
   create() {
     const { wildSpeciesId, wildLevel, zoneId } = this.battleInit;
     this.wild = makeBattleCreature(wildSpeciesId, wildLevel);
-    this.pc   = makeBattleCreature(7, 10);
+    const starterSpeciesId = (this.game.registry.get("starterSpeciesId") as number | undefined) ?? 7;
+    this.pc   = makeBattleCreature(starterSpeciesId, 5);
 
     const cave = zoneId === "cave";
     const skyCol = cave ? 0x1c1228 : 0x87ceeb;
