@@ -37,11 +37,12 @@ export class PreloadScene extends Phaser.Scene {
       label.setText(file.key);
     });
 
-    // ── Asset loads go here when real files are ready ────────────────────────
-    // this.load.tilemapTiledJSON("overworld", "assets/maps/overworld.json");
-    // this.load.image("overworld-tiles", "assets/tilesets/overworld.png");
-    // this.load.spritesheet("player", "assets/sprites/player.png", { frameWidth: 16, frameHeight: 16 });
-    // this.load.audio("bgm-town", "assets/audio/town.ogg");
+    // ── Creature battle sprites ───────────────────────────────────────────────
+    const CREATURE_IDS = [1, 4, 7, 16, 19, 25, 41, 54, 63, 74, 92, 129];
+    for (const id of CREATURE_IDS) {
+      this.load.image(`creature-front-${id}`, `assets/creatures/front/${id}.png`);
+      this.load.image(`creature-back-${id}`,  `assets/creatures/back/${id}.png`);
+    }
   }
 
   create() {

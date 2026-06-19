@@ -65,7 +65,21 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0x66bbdd);
     g.fillRect(26, 18, 2, 2);
 
-    g.generateTexture("tileset", 32, 32);
+    // Tile 4 — Tall Grass (encounter zone) — index (col=0, row=2) in 2×3 tileset
+    g.fillStyle(0x3a6518);
+    g.fillRect(0, 32, 16, 16);
+    // Grass blade clusters
+    g.fillStyle(0x5aa030);
+    g.fillRect(1, 42, 2, 6); g.fillRect(3, 40, 2, 8);
+    g.fillRect(6, 38, 2, 10); g.fillRect(8, 41, 2, 7);
+    g.fillRect(11, 39, 2, 9); g.fillRect(13, 42, 2, 6);
+    // Dark tips
+    g.fillStyle(0x285010);
+    g.fillRect(1, 42, 2, 1); g.fillRect(3, 40, 2, 1);
+    g.fillRect(6, 38, 2, 1); g.fillRect(8, 41, 2, 1);
+    g.fillRect(11, 39, 2, 1); g.fillRect(13, 42, 2, 1);
+
+    g.generateTexture("tileset", 32, 48); // 2×3 tile grid
     g.destroy();
   }
 

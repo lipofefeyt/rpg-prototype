@@ -1,6 +1,6 @@
 import { type Direction } from "@/types";
 import {
-  TILE_GRASS as G, TILE_TREE as T, TILE_PATH as P, TILE_WATER as W,
+  TILE_GRASS as G, TILE_TREE as T, TILE_PATH as P, TILE_WATER as W, TILE_TALLGRASS as TG,
   MAP_COLS, MAP_ROWS, PATH_ROW, PATH_COL,
   CAVE_COLS, CAVE_ROWS, CAVE_EXIT_COL,
 } from "@/constants";
@@ -30,6 +30,13 @@ export interface ZoneTransition {
   spawnY: number;
 }
 
+export interface EncounterEntry {
+  speciesId: number;
+  minLevel: number;
+  maxLevel: number;
+  weight: number; // relative frequency
+}
+
 export interface ZoneDef {
   id: string;
   cols: number;
@@ -40,6 +47,8 @@ export interface ZoneDef {
   npcs: NpcDef[];
   signs: SignDef[];
   transitions: ZoneTransition[];
+  encounterRate: number;        // probability per tall grass step (0 = none)
+  encounterPool: EncounterEntry[];
 }
 
 // ── Map builders ──────────────────────────────────────────────────────────────
@@ -51,11 +60,11 @@ function buildOverworld(): number[][] {
   for (let x = 0; x < MAP_COLS; x++) { m[0][x] = T; m[MAP_ROWS - 1][x] = T; }
   for (let y = 0; y < MAP_ROWS; y++) { m[y][0] = T; m[y][MAP_COLS - 1] = T; }
 
-  // Cross-roads paths
+  // Crossroads paths
   for (let x = 1; x < MAP_COLS - 1; x++) m[PATH_ROW][x] = P;
   for (let y = 1; y < MAP_ROWS - 1; y++) m[y][PATH_COL] = P;
 
-  // Tree groves — corners + scattered
+  // Tree groves — corners + scattered clusters
   const trees: [number, number][] = [
     [3,3],[4,3],[5,3],[3,4],[5,4],[3,5],[4,5],[5,5],
     [43,3],[44,3],[45,3],[43,4],[45,4],[43,5],[44,5],[45,5],
@@ -82,11 +91,25 @@ function buildOverworld(): number[][] {
     for (let x = 8; x <= 16; x++)
       if (m[y][x] !== T && m[y][x] !== P) m[y][x] = W;
 
+  // Tall grass patches — 4 quadrants, away from paths
+  const tgPatches: [number, number, number, number][] = [
+    [9, 17,  4,  9],  // NW quadrant
+    [6, 14, 27, 31],  // NE quadrant
+    [22, 26,  3,  7], // SW quadrant
+    [22, 27, 28, 36], // SE quadrant
+  ];
+  for (const [r0, r1, c0, c1] of tgPatches) {
+    for (let y = r0; y <= r1; y++) {
+      for (let x = c0; x <= c1; x++) {
+        if (m[y][x] === G) m[y][x] = TG;
+      }
+    }
+  }
+
   return m;
 }
 
 function buildCave(): number[][] {
-  // 25×20 cave interior — floor is PATH, walls are TREE
   const m = Array.from({ length: CAVE_ROWS }, () => Array<number>(CAVE_COLS).fill(P));
 
   // Border walls
@@ -112,10 +135,7 @@ function buildCave(): number[][] {
     for (let x = 9; x <= 14; x++)
       m[y][x] = W;
 
-  // Exit corridor at bottom (CAVE_EXIT_COL stays as floor)
-  // The rest of the bottom wall is already T; the exit tile is carved open
-  m[CAVE_ROWS - 2][CAVE_EXIT_COL] = P; // always walkable — exit trigger fires here
-
+  m[CAVE_ROWS - 2][CAVE_EXIT_COL] = P; // exit walkable
   return m;
 }
 
@@ -139,8 +159,16 @@ export const ZONES: Record<string, ZoneDef> = {
       { tileX: PATH_COL, tileY: 3, scriptId: "sign_cave_entrance" },
     ],
     transitions: [
-      // Walk to the top edge of the map → enter cave
       { tileX: PATH_COL, tileY: 1, targetZoneId: "cave", spawnX: CAVE_EXIT_COL, spawnY: CAVE_ROWS - 3 },
+    ],
+    encounterRate: 0.15,
+    encounterPool: [
+      { speciesId: 16,  minLevel: 3, maxLevel: 6,  weight: 30 }, // Pidgey
+      { speciesId: 19,  minLevel: 3, maxLevel: 5,  weight: 25 }, // Rattata
+      { speciesId: 25,  minLevel: 4, maxLevel: 7,  weight: 10 }, // Pikachu
+      { speciesId: 63,  minLevel: 3, maxLevel: 6,  weight: 5  }, // Abra
+      { speciesId: 54,  minLevel: 4, maxLevel: 7,  weight: 15 }, // Psyduck
+      { speciesId: 129, minLevel: 3, maxLevel: 5,  weight: 15 }, // Magikarp
     ],
   },
 
@@ -158,8 +186,9 @@ export const ZONES: Record<string, ZoneDef> = {
       { tileX: CAVE_EXIT_COL, tileY: CAVE_ROWS - 4, scriptId: "sign_cave_exit" },
     ],
     transitions: [
-      // Walk to the bottom exit tile → return to overworld
       { tileX: CAVE_EXIT_COL, tileY: CAVE_ROWS - 2, targetZoneId: "overworld", spawnX: PATH_COL, spawnY: 2 },
     ],
+    encounterRate: 0,
+    encounterPool: [],
   },
 };

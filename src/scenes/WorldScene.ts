@@ -1,10 +1,18 @@
 import Phaser from "phaser";
 import { type Direction } from "@/types";
-import { TILE_SIZE, ANIM_BASE, MS_PER_GAME_MINUTE, TILE_GRASS, TILE_PATH } from "@/constants";
+import { TILE_SIZE, ANIM_BASE, MS_PER_GAME_MINUTE, TILE_GRASS, TILE_PATH, TILE_TALLGRASS } from "@/constants";
 import { ZONES, type ZoneDef, type NpcDef } from "@/data/zones";
+import type { BattleInitData } from "@/scenes/BattleScene";
 import { SCRIPTS } from "@/data/scripts";
 
-const MOVE_DURATION = 150; // ms per tile
+const MOVE_DURATION = 150;
+
+function pickByWeight<T extends { weight: number }>(pool: T[]): T {
+  const total = pool.reduce((s, e) => s + e.weight, 0);
+  let r = Math.random() * total;
+  for (const entry of pool) { r -= entry.weight; if (r <= 0) return entry; }
+  return pool[pool.length - 1];
+}
 
 const DIR_DELTA: Record<Direction, { dx: number; dy: number }> = {
   up:    { dx:  0, dy: -1 },
@@ -196,7 +204,7 @@ export class WorldScene extends Phaser.Scene {
   private isWalkable(tx: number, ty: number): boolean {
     const tile = this.groundLayer.getTileAt(tx, ty);
     if (!tile) return false;
-    return tile.index === TILE_GRASS || tile.index === TILE_PATH;
+    return tile.index === TILE_GRASS || tile.index === TILE_PATH || tile.index === TILE_TALLGRASS;
   }
 
   private tryStep(dir: Direction): void {
@@ -224,6 +232,7 @@ export class WorldScene extends Phaser.Scene {
         this.isMoving = false;
         this.player.play(`idle-${this.direction}`, true);
         this.checkTransition();
+        this.checkEncounter();
       },
     });
   }
@@ -252,6 +261,27 @@ export class WorldScene extends Phaser.Scene {
   private showDialogue(pages: string[]): void {
     this.dialogueLocked = true;
     this.game.events.emit("dialogue:show", pages);
+  }
+
+  // ── Wild encounters ───────────────────────────────────────────────────────
+
+  private checkEncounter(): void {
+    const tile = this.groundLayer.getTileAt(this.tileX, this.tileY);
+    if (tile?.index !== TILE_TALLGRASS) return;
+    const pool = this.currentZone.encounterPool;
+    if (!pool.length || Math.random() > this.currentZone.encounterRate) return;
+
+    const entry = pickByWeight(pool);
+    const level = Phaser.Math.Between(entry.minLevel, entry.maxLevel);
+
+    const initData: BattleInitData = {
+      wildSpeciesId: entry.speciesId,
+      wildLevel: level,
+      zoneId: this.currentZone.id,
+    };
+    this.scene.pause("UIScene");
+    this.scene.launch("BattleScene", initData);
+    this.scene.pause();
   }
 
   // ── Zone transitions ──────────────────────────────────────────────────────

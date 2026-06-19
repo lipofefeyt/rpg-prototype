@@ -8,10 +8,11 @@ export const PATH_ROW = 20; // row index of the horizontal path
 export const PATH_COL = 25; // col index of the vertical path
 
 // Tile indices — must match the tileset order generated in BootScene
-export const TILE_GRASS = 0;
-export const TILE_TREE  = 1;
-export const TILE_PATH  = 2;
-export const TILE_WATER = 3;
+export const TILE_GRASS      = 0;
+export const TILE_TREE       = 1;
+export const TILE_PATH       = 2;
+export const TILE_WATER      = 3;
+export const TILE_TALLGRASS  = 4; // walkable, triggers wild encounters
 
 // Cave zone dimensions
 export const CAVE_COLS     = 25;
