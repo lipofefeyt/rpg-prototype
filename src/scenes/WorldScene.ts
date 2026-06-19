@@ -57,7 +57,7 @@ export class WorldScene extends Phaser.Scene {
   direction: Direction = "down";
   isMoving = false;
   private dialogueLocked = false;
-  private interactCooldown = 0; // frames to block Z after dialogue closes
+  private requireZRelease = false; // Z must be released before interaction re-arms
 
   // Day/night clock
   private gameHour = 8; // start at 8am (clear day)
@@ -112,7 +112,7 @@ export class WorldScene extends Phaser.Scene {
     // ── Global events ────────────────────────────────────────────────────────
     this.game.events.on("dialogue:done", () => {
       this.dialogueLocked = false;
-      this.interactCooldown = 3; // block Z re-trigger for 3 frames after close
+      this.requireZRelease = true; // won't re-arm until player releases Z
     }, this);
 
     this.scene.launch("UIScene");
@@ -123,9 +123,11 @@ export class WorldScene extends Phaser.Scene {
 
     if (this.dialogueLocked) return;
 
-    if (this.interactCooldown > 0) {
-      this.interactCooldown--;
-    } else if (!this.isMoving && Phaser.Input.Keyboard.JustDown(this.actionKey)) {
+    if (this.requireZRelease) {
+      if (!this.actionKey.isDown) this.requireZRelease = false;
+    }
+
+    if (!this.requireZRelease && !this.isMoving && Phaser.Input.Keyboard.JustDown(this.actionKey)) {
       this.tryInteract();
       return;
     }
