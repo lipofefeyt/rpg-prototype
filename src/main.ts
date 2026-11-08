@@ -11,7 +11,10 @@ const config: Phaser.Types.Core.GameConfig = {
   width: 480,
   height: 320,
   pixelArt: true,
-  zoom: 2,
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
   backgroundColor: "#000",
   scene: [BootScene, PreloadScene, StarterScene, WorldScene, BattleScene, UIScene],
   physics: {

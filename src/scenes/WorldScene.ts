@@ -4,6 +4,7 @@ import { TILE_SIZE, ANIM_BASE, MS_PER_GAME_MINUTE, TILE_GRASS, TILE_PATH, TILE_T
 import { ZONES, type ZoneDef, type NpcDef } from "@/data/zones";
 import type { BattleInitData } from "@/scenes/BattleScene";
 import { SCRIPTS } from "@/data/scripts";
+import { getTouchState, type TouchState } from "@/systems/touchInput";
 
 const MOVE_DURATION = 150;
 
@@ -43,6 +44,7 @@ export class WorldScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<Direction, Phaser.Input.Keyboard.Key>;
   private actionKey!: Phaser.Input.Keyboard.Key;
+  private touch!: TouchState;
 
   private tilemap!: Phaser.Tilemaps.Tilemap;
   private groundLayer!: Phaser.Tilemaps.TilemapLayer;
@@ -96,6 +98,7 @@ export class WorldScene extends Phaser.Scene {
       right: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D),
     };
     this.actionKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+    this.touch = getTouchState(this.game);
 
     // ── Animations ───────────────────────────────────────────────────────────
     this.registerAnimations();
@@ -127,7 +130,11 @@ export class WorldScene extends Phaser.Scene {
       if (!this.actionKey.isDown) this.requireZRelease = false;
     }
 
-    if (!this.requireZRelease && !this.isMoving && Phaser.Input.Keyboard.JustDown(this.actionKey)) {
+    const touchInteract = this.touch.actionPressed;
+    this.touch.actionPressed = false; // one-shot: consume regardless of whether we act on it
+
+    if (!this.requireZRelease && !this.isMoving
+        && (Phaser.Input.Keyboard.JustDown(this.actionKey) || touchInteract)) {
       this.tryInteract();
       return;
     }
@@ -206,10 +213,10 @@ export class WorldScene extends Phaser.Scene {
   // ── Movement ──────────────────────────────────────────────────────────────
 
   private readInput(): Direction | null {
-    if (this.cursors.up.isDown    || this.wasd.up.isDown)    return "up";
-    if (this.cursors.down.isDown  || this.wasd.down.isDown)  return "down";
-    if (this.cursors.left.isDown  || this.wasd.left.isDown)  return "left";
-    if (this.cursors.right.isDown || this.wasd.right.isDown) return "right";
+    if (this.cursors.up.isDown    || this.wasd.up.isDown    || this.touch.up)    return "up";
+    if (this.cursors.down.isDown  || this.wasd.down.isDown  || this.touch.down)  return "down";
+    if (this.cursors.left.isDown  || this.wasd.left.isDown  || this.touch.left)  return "left";
+    if (this.cursors.right.isDown || this.wasd.right.isDown || this.touch.right) return "right";
     return null;
   }
 
