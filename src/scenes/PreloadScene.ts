@@ -37,12 +37,9 @@ export class PreloadScene extends Phaser.Scene {
       label.setText(file.key);
     });
 
-    // ── Creature battle sprites ───────────────────────────────────────────────
-    const CREATURE_IDS = [1, 4, 7, 16, 19, 25, 41, 54, 63, 74, 92, 129];
-    for (const id of CREATURE_IDS) {
-      this.load.image(`creature-front-${id}`, `assets/creatures/front/${id}.png`);
-      this.load.image(`creature-back-${id}`,  `assets/creatures/back/${id}.png`);
-    }
+    // Battle-creature sprites are generated procedurally in BootScene (see
+    // src/gfx/creatureSprites.ts) rather than loaded from files - nothing to
+    // queue here today, but this scaffold stays in place for future asset loads.
   }
 
   create() {

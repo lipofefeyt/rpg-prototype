@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { genCreatureSprites } from "@/gfx/creatureSprites";
 
 // Tileset — 32×48 texture, 2 cols × 3 rows of 16×16 tiles
 //   0: grass  1: tree  2: path  3: water  4: tall-grass  5: cave-floor
@@ -20,6 +21,7 @@ export class BootScene extends Phaser.Scene {
     this.genNpcSheet("npc-guard",    (g, ox, oy, d) => this.drawGuard(g, ox, oy, d));
     this.genNpcSheet("npc-merchant", (g, ox, oy, d) => this.drawMerchant(g, ox, oy, d));
     this.genNpcSheet("npc-miner",    (g, ox, oy, d) => this.drawMiner(g, ox, oy, d));
+    genCreatureSprites(this);
     this.scene.start("PreloadScene");
   }
 
