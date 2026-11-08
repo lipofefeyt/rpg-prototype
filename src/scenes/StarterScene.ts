@@ -19,21 +19,21 @@ interface StarterDef {
 const STARTERS: StarterDef[] = [
   {
     speciesId: 1,
-    name:  "Bulbasaur",
+    name:  "Budleaf",
     types: ["Grass", "Poison"],
-    desc:  "Carries a seed on\nits back since birth.\nSteady and resilient.",
+    desc:  "A bulb sprouts on\nits back at birth.\nCalm and resilient.",
   },
   {
     speciesId: 4,
-    name:  "Charmander",
+    name:  "Cindertail",
     types: ["Fire"],
-    desc:  "Its tail flame shows\nthe strength of its\nburning life force.",
+    desc:  "A small flame burns\nat its tail's tip,\nfueled by its spirit.",
   },
   {
     speciesId: 7,
-    name:  "Squirtle",
+    name:  "Aquashell",
     types: ["Water"],
-    desc:  "Its shell deflects\nattacks and it fires\nwater at high speed.",
+    desc:  "Its hardened shell\ndeflects attacks; it\njets water at speed.",
   },
 ];
 
@@ -49,7 +49,7 @@ export class StarterScene extends Phaser.Scene {
   private rightKey!:   Phaser.Input.Keyboard.Key;
   private confirmKey!: Phaser.Input.Keyboard.Key;
 
-  private selected  = 1; // start on Charmander (center)
+  private selected  = 1; // start on Cindertail (center)
   private sprites:    Phaser.GameObjects.Image[] = [];
   private highlight!: Phaser.GameObjects.Graphics;
   private nameText!:  Phaser.GameObjects.Text;
@@ -102,14 +102,14 @@ export class StarterScene extends Phaser.Scene {
       fontFamily: "monospace", fontStyle: "bold",
     }).setOrigin(0.5).setDepth(2);
 
-    this.add.text(W / 2, 38, "Your Pokémon companion awaits.", {
+    this.add.text(W / 2, 38, "Your creature companion awaits.", {
       fontSize: "9px", color: "#374466", fontFamily: "monospace",
     }).setOrigin(0.5).setDepth(2);
 
     // ── Highlight box ────────────────────────────────────────────────────────
     this.highlight = this.add.graphics().setDepth(3);
 
-    // ── Pokémon sprites ──────────────────────────────────────────────────────
+    // ── Starter sprites ──────────────────────────────────────────────────────
     for (let i = 0; i < 3; i++) {
       const spr = this.add
         .image(SPR_X[i], SPR_Y, `creature-front-${STARTERS[i].speciesId}`)

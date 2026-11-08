@@ -165,12 +165,12 @@ export const ZONES: Record<string, ZoneDef> = {
     ],
     encounterRate: 0.15,
     encounterPool: [
-      { speciesId: 16,  minLevel: 3, maxLevel: 6,  weight: 30 }, // Pidgey
-      { speciesId: 19,  minLevel: 3, maxLevel: 5,  weight: 25 }, // Rattata
-      { speciesId: 25,  minLevel: 4, maxLevel: 7,  weight: 10 }, // Pikachu
-      { speciesId: 63,  minLevel: 3, maxLevel: 6,  weight: 5  }, // Abra
-      { speciesId: 54,  minLevel: 4, maxLevel: 7,  weight: 15 }, // Psyduck
-      { speciesId: 129, minLevel: 3, maxLevel: 5,  weight: 15 }, // Magikarp
+      { speciesId: 16,  minLevel: 3, maxLevel: 6,  weight: 30 }, // Flitterwing
+      { speciesId: 19,  minLevel: 3, maxLevel: 5,  weight: 25 }, // Nibblerat
+      { speciesId: 25,  minLevel: 4, maxLevel: 7,  weight: 10 }, // Sparkit
+      { speciesId: 63,  minLevel: 3, maxLevel: 6,  weight: 5  }, // Mindling
+      { speciesId: 54,  minLevel: 4, maxLevel: 7,  weight: 15 }, // Quackle
+      { speciesId: 129, minLevel: 3, maxLevel: 5,  weight: 15 }, // Finflop
     ],
   },
 

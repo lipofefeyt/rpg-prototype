@@ -1,7 +1,7 @@
-import type { PkmnType } from "@/types";
+import type { CreatureType } from "@/types";
 
 // Attacker → Defender = damage multiplier. Missing = 1×.
-const CHART: Partial<Record<PkmnType, Partial<Record<PkmnType, number>>>> = {
+const CHART: Partial<Record<CreatureType, Partial<Record<CreatureType, number>>>> = {
   normal:   { rock: 0.5, ghost: 0, steel: 0.5 },
   fire:     { fire: 0.5, water: 0.5, grass: 2, ice: 2, bug: 2, rock: 0.5, dragon: 0.5, steel: 2 },
   water:    { fire: 2, water: 0.5, grass: 0.5, ground: 2, rock: 2, dragon: 0.5 },
@@ -22,10 +22,10 @@ const CHART: Partial<Record<PkmnType, Partial<Record<PkmnType, number>>>> = {
   fairy:    { fire: 0.5, fighting: 2, poison: 0.5, dragon: 2, dark: 2, steel: 0.5 },
 };
 
-export function getTypeEffect(atk: PkmnType, def: PkmnType): number {
+export function getTypeEffect(atk: CreatureType, def: CreatureType): number {
   return CHART[atk]?.[def] ?? 1;
 }
 
-export function getTotalEffect(atk: PkmnType, defTypes: PkmnType[]): number {
+export function getTotalEffect(atk: CreatureType, defTypes: CreatureType[]): number {
   return defTypes.reduce((acc, t) => acc * getTypeEffect(atk, t), 1);
 }

@@ -1,11 +1,11 @@
-import type { PkmnType } from "@/types";
+import type { CreatureType } from "@/types";
 
 export type MoveCategory = "physical" | "special" | "status";
 
 export interface MoveDef {
   id: string;
   name: string;
-  type: PkmnType;
+  type: CreatureType;
   category: MoveCategory;
   power: number;    // 0 for status
   accuracy: number; // 0-100

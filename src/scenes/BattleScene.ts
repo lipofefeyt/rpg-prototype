@@ -106,7 +106,7 @@ export class BattleScene extends Phaser.Scene {
 
     // Action buttons
     this.btnGfx = this.add.graphics();
-    const ACTION_LABELS = ["FIGHT", "BAG", "POKÉMON", "RUN"];
+    const ACTION_LABELS = ["FIGHT", "BAG", "PARTY", "RUN"];
     for (let i = 0; i < 4; i++) {
       const r = Math.floor(i / 2), c = i % 2;
       this.btnLabels.push(
@@ -192,7 +192,7 @@ export class BattleScene extends Phaser.Scene {
     switch (this.cursor) {
       case 0: this.enterMoveSelect(); break;
       case 1: this.doBallThrow(); break;
-      case 2: this.showMsg("No other Pokémon in party!", () => this.enterMenu()); break;
+      case 2: this.showMsg("No other creatures in party!", () => this.enterMenu()); break;
       case 3:
         this.hideActionButtons();
         this.showMsg("Got away safely!", () => this.exitBattle());
@@ -312,7 +312,7 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  // ── Poké Ball ─────────────────────────────────────────────────────────────
+  // ── Capture Orb ───────────────────────────────────────────────────────────
 
   private doBallThrow() {
     this.hideActionButtons();
@@ -325,10 +325,10 @@ export class BattleScene extends Phaser.Scene {
       this.showMsg("… *shake* …", () => doShakes(n - 1, cb));
     };
 
-    this.showMsg("You threw a Poké Ball!", () =>
+    this.showMsg("You threw a Capture Orb!", () =>
       doShakes(shakes, () => {
         if (caught)
-          this.showMsg(`${this.wild.name} was caught! Gotcha!`, () => this.exitBattle());
+          this.showMsg(`${this.wild.name} was caught!`, () => this.exitBattle());
         else
           this.showMsg(`Oh! ${this.wild.name} broke free!`, () => this.enterMenu());
       }),
