@@ -1,7 +1,9 @@
 import Phaser from "phaser";
-import { makeBattleCreature, type BattleCreature } from "@/data/creatures";
-import { MOVES } from "@/data/moves";
+import { makeBattleCreature, gainExp, SPECIES, type BattleCreature, type StatusCondition } from "@/data/creatures";
+import { MOVES, type MoveDef } from "@/data/moves";
 import { getTotalEffect } from "@/data/typeChart";
+import { ITEMS } from "@/data/items";
+import { MAX_PARTY_SIZE, getParty, setParty, getInventory, setInventory } from "@/systems/playerState";
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 const W = 480, H = 320;
@@ -23,14 +25,46 @@ export interface BattleInitData {
   zoneId: string;
 }
 
-type BattleState = "menu" | "move-select";
+type BattleState = "menu" | "move-select" | "item-select" | "party-select" | "party-select-forced";
 
 interface DamageResult { damage: number; effectiveness: number; isCrit: boolean }
+
+/** One slot in the generic 2x2 selectable button grid (moves / items / party). */
+interface GridEntry {
+  label: string;
+  sublabel: string;
+  enabled: boolean;
+  typeColor?: number;
+}
+
+// Status-condition moves this build actually wires up - the rest of the
+// "status" category (growl, tail_whip, defense_curl, teleport, splash, ...)
+// are stat-stage/utility moves with no StatusCondition equivalent, so they're
+// left as flavor-only ("used X!" with no further effect) rather than building
+// a whole separate stat-stage system for this pass.
+const STATUS_MOVE_EFFECTS: Partial<Record<string, StatusCondition>> = {
+  thunder_wave: "paralysis",
+  poison_powder: "poison",
+  hypnosis: "sleep",
+};
+
+const STATUS_APPLIED_MSG: Record<StatusCondition, (name: string) => string> = {
+  paralysis: (n) => `${n} was paralyzed! It may be unable to move!`,
+  poison:    (n) => `${n} was poisoned!`,
+  sleep:     (n) => `${n} fell asleep!`,
+  burn:      (n) => `${n} was burned!`,
+  freeze:    (n) => `${n} was frozen solid!`,
+};
 
 export class BattleScene extends Phaser.Scene {
   private battleInit!: BattleInitData;
   private wild!: BattleCreature;
-  private pc!: BattleCreature;
+
+  private party!: BattleCreature[];
+  private activeIndex = 0;
+  private get pc(): BattleCreature { return this.party[this.activeIndex]; }
+
+  private itemIds: string[] = []; // in-stock item ids backing the current item-select grid
 
   private wildSprite!: Phaser.GameObjects.Image;
   private pcSprite!: Phaser.GameObjects.Image;
@@ -38,13 +72,20 @@ export class BattleScene extends Phaser.Scene {
   private wildHpFill!: Phaser.GameObjects.Rectangle;
   private pcHpFill!: Phaser.GameObjects.Rectangle;
   private pcHpText!: Phaser.GameObjects.Text;
+  private pcNameText!: Phaser.GameObjects.Text;
+  private pcLevelText!: Phaser.GameObjects.Text;
 
   private msgText!: Phaser.GameObjects.Text;
   private btnGfx!: Phaser.GameObjects.Graphics;
   private btnLabels: Phaser.GameObjects.Text[] = [];
-  private moveGfx!: Phaser.GameObjects.Graphics;
-  private moveLabels: Phaser.GameObjects.Text[] = [];
-  private movePpLabels: Phaser.GameObjects.Text[] = [];
+
+  // Generic 2x2 selectable grid, reused for move-select / item-select / party-select.
+  private gridGfx!: Phaser.GameObjects.Graphics;
+  private gridLabels: Phaser.GameObjects.Text[] = [];
+  private gridSubLabels: Phaser.GameObjects.Text[] = [];
+  private gridEntries: GridEntry[] = [];
+  private onGridConfirm: ((index: number) => void) | null = null;
+  private onGridCancel: (() => void) | null = null;
 
   private state: BattleState = "menu";
   private cursor = 0;
@@ -64,10 +105,21 @@ export class BattleScene extends Phaser.Scene {
   init(d: BattleInitData) { this.battleInit = d; }
 
   create() {
+    // See handleShutdown() for why this registration (not just a same-named
+    // method) is required - re-registered each battle since create() re-runs
+    // on the same reused Scene instance each time, but this listener only fires once.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
+
     const { wildSpeciesId, wildLevel, zoneId } = this.battleInit;
     this.wild = makeBattleCreature(wildSpeciesId, wildLevel);
-    const starterSpeciesId = (this.game.registry.get("starterSpeciesId") as number | undefined) ?? 7;
-    this.pc   = makeBattleCreature(starterSpeciesId, 5);
+
+    this.party = getParty(this.game);
+    if (this.party.length === 0) {
+      // Safety fallback only - StarterScene always seeds the party on confirm.
+      const starterSpeciesId = (this.game.registry.get("starterSpeciesId") as number | undefined) ?? 7;
+      this.party = [makeBattleCreature(starterSpeciesId, 5)];
+    }
+    this.activeIndex = Math.max(0, this.party.findIndex(c => c.currentHp > 0));
 
     const cave = zoneId === "cave";
     const skyCol = cave ? 0x1c1228 : 0x87ceeb;
@@ -116,22 +168,22 @@ export class BattleScene extends Phaser.Scene {
       );
     }
 
-    // Move buttons
-    this.moveGfx = this.add.graphics();
+    // Generic grid (move / item / party select)
+    this.gridGfx = this.add.graphics();
     for (let i = 0; i < 4; i++) {
       const r = Math.floor(i / 2), c = i % 2;
-      this.moveLabels.push(
+      this.gridLabels.push(
         this.add.text(BTN_COLS[c] + 10, BTN_ROWS[r] + BTN_H / 2 - 5, "", {
           fontSize: "10px", color: "#e8eeff", fontFamily: "monospace",
         }),
       );
-      this.movePpLabels.push(
+      this.gridSubLabels.push(
         this.add.text(BTN_COLS[c] + BTN_W - 6, BTN_ROWS[r] + BTN_H / 2 + 5, "", {
           fontSize: "9px", color: "#aabbcc", fontFamily: "monospace",
         }).setOrigin(1, 0.5),
       );
     }
-    this.hideMoveButtons();
+    this.hideGrid();
 
     // Input
     const KC = Phaser.Input.Keyboard.KeyCodes;
@@ -152,8 +204,8 @@ export class BattleScene extends Phaser.Scene {
   update() {
     const JD = Phaser.Input.Keyboard.JustDown;
     if (this.msgWaiting) { if (JD(this.zKey)) this.advanceMsg(); return; }
-    if (this.state === "menu")         this.handleMenuInput();
-    else if (this.state === "move-select") this.handleMoveInput();
+    if (this.state === "menu") this.handleMenuInput();
+    else this.handleGridInput(); // move-select / item-select / party-select(-forced)
   }
 
   // ── Message system ────────────────────────────────────────────────────────
@@ -171,6 +223,13 @@ export class BattleScene extends Phaser.Scene {
     cb?.();
   }
 
+  /** Shows a sequence of messages one at a time (e.g. level-up + learned-move lines). */
+  private showSequential(msgs: string[], onDone: () => void) {
+    if (!msgs.length) { onDone(); return; }
+    const [first, ...rest] = msgs;
+    this.showMsg(first, () => this.showSequential(rest, onDone));
+  }
+
   // ── Menu ──────────────────────────────────────────────────────────────────
 
   private enterMenu() {
@@ -178,7 +237,7 @@ export class BattleScene extends Phaser.Scene {
     this.cursor = 0;
     this.msgText.setText("What will you do?");
     this.showActionButtons();
-    this.hideMoveButtons();
+    this.hideGrid();
   }
 
   private handleMenuInput() {
@@ -191,13 +250,61 @@ export class BattleScene extends Phaser.Scene {
   private confirmMenu() {
     switch (this.cursor) {
       case 0: this.enterMoveSelect(); break;
-      case 1: this.doBallThrow(); break;
-      case 2: this.showMsg("No other creatures in party!", () => this.enterMenu()); break;
+      case 1: this.enterItemSelect(); break;
+      case 2: this.enterPartySelect(false); break;
       case 3:
         this.hideActionButtons();
         this.showMsg("Got away safely!", () => this.exitBattle());
         break;
     }
+  }
+
+  // ── Generic grid (move / item / party select) ────────────────────────────
+
+  private showGrid(entries: GridEntry[], onConfirm: (index: number) => void, onCancel: (() => void) | null) {
+    this.gridEntries = entries;
+    this.onGridConfirm = onConfirm;
+    this.onGridCancel = onCancel;
+    this.gridGfx.setVisible(true);
+    for (let i = 0; i < 4; i++) {
+      const e = entries[i];
+      this.gridLabels[i].setText(e?.label ?? "—").setVisible(true);
+      this.gridSubLabels[i].setText(e?.sublabel ?? "").setVisible(true);
+    }
+    this.redrawGrid();
+  }
+
+  private hideGrid() {
+    this.gridGfx.clear().setVisible(false);
+    this.gridLabels.forEach(l => l.setVisible(false));
+    this.gridSubLabels.forEach(l => l.setVisible(false));
+  }
+
+  private redrawGrid() {
+    this.gridGfx.clear();
+    for (let i = 0; i < 4; i++) {
+      const r = Math.floor(i / 2), c = i % 2;
+      const [x, y] = [BTN_COLS[c], BTN_ROWS[r]];
+      const sel = i === this.cursor;
+      const entry = this.gridEntries[i];
+      const enabled = entry?.enabled ?? false;
+      this.gridGfx.fillStyle(sel ? 0x1a3a7a : (enabled ? 0x0d1a3a : 0x0a0a1a));
+      this.gridGfx.fillRect(x, y, BTN_W, BTN_H);
+      this.gridGfx.lineStyle(1.5, sel ? 0x4488ff : (enabled ? 0x1a2255 : 0x111111));
+      this.gridGfx.strokeRect(x, y, BTN_W, BTN_H);
+      if (entry?.typeColor !== undefined) {
+        this.gridGfx.fillStyle(entry.typeColor);
+        this.gridGfx.fillRect(x + BTN_W - 14, y + 5, 8, 8);
+      }
+    }
+  }
+
+  private handleGridInput() {
+    const JD = Phaser.Input.Keyboard.JustDown;
+    if (JD(this.leftKey) || JD(this.rightKey)) { this.cursor ^= 1; this.redrawGrid(); }
+    if (JD(this.upKey)   || JD(this.downKey))  { this.cursor ^= 2; this.redrawGrid(); }
+    if (JD(this.xKey) && this.onGridCancel) { this.onGridCancel(); return; }
+    if (JD(this.zKey)) this.onGridConfirm?.(this.cursor);
   }
 
   // ── Move select ───────────────────────────────────────────────────────────
@@ -207,23 +314,105 @@ export class BattleScene extends Phaser.Scene {
     this.cursor = 0;
     this.msgText.setText("Choose a move:");
     this.hideActionButtons();
-    this.showMoveButtons();
+    const entries: GridEntry[] = this.pc.moves.map(slot => {
+      const mv = MOVES[slot.moveId];
+      return {
+        label: mv?.name ?? slot.moveId,
+        sublabel: `PP ${slot.pp}/${slot.maxPp}`,
+        enabled: slot.pp > 0,
+        typeColor: mv ? (TYPE_CHIP[mv.type] ?? 0x888888) : undefined,
+      };
+    });
+    this.showGrid(entries, (i) => this.chooseMove(i), () => this.enterMenu());
   }
 
-  private handleMoveInput() {
-    const JD = Phaser.Input.Keyboard.JustDown;
-    if (JD(this.leftKey) || JD(this.rightKey)) { this.cursor ^= 1; this.redrawMoveButtons(); }
-    if (JD(this.upKey)   || JD(this.downKey))  { this.cursor ^= 2; this.redrawMoveButtons(); }
-    if (JD(this.xKey)) { this.enterMenu(); return; }
-    if (JD(this.zKey)) {
-      const slot = this.pc.moves[this.cursor];
-      if (!slot || slot.pp === 0) {
-        this.showMsg("No PP left for that move!", () => { this.state = "move-select"; });
-        return;
-      }
-      this.hideMoveButtons();
-      this.executeTurn(this.cursor);
+  private chooseMove(i: number) {
+    const slot = this.pc.moves[i];
+    if (!slot || slot.pp === 0) {
+      this.showMsg("No PP left for that move!", () => { this.state = "move-select"; });
+      return;
     }
+    this.hideGrid();
+    this.executeTurn(i);
+  }
+
+  // ── Item select ───────────────────────────────────────────────────────────
+
+  private enterItemSelect() {
+    this.state = "item-select";
+    this.cursor = 0;
+    this.msgText.setText("Use which item?");
+    this.hideActionButtons();
+    const inv = getInventory(this.game);
+    this.itemIds = Object.keys(ITEMS).filter(id => (inv[id] ?? 0) > 0);
+    const entries: GridEntry[] = this.itemIds.map(id => ({
+      label: ITEMS[id].name,
+      sublabel: `x${inv[id]}`,
+      enabled: true,
+    }));
+    this.showGrid(entries, (i) => this.chooseItem(i), () => this.enterMenu());
+  }
+
+  private chooseItem(i: number) {
+    const id = this.itemIds[i];
+    if (!id) return;
+    const item = ITEMS[id];
+
+    if (item.kind === "capture") {
+      this.hideGrid();
+      this.consumeItem(id);
+      this.doBallThrow();
+      return;
+    }
+
+    // kind === "heal"
+    if (this.pc.currentHp >= this.pc.maxHp) {
+      this.showMsg(`${this.pc.name} is already at full HP!`, () => { this.state = "item-select"; });
+      return;
+    }
+    this.hideGrid();
+    this.consumeItem(id);
+    this.pc.currentHp = Math.min(this.pc.maxHp, this.pc.currentHp + (item.healAmount ?? 0));
+    this.refreshPcHpPanel();
+    this.showMsg(`${this.pc.name} was healed!`, () => this.enterMenu());
+  }
+
+  private consumeItem(id: string) {
+    const inv = getInventory(this.game);
+    inv[id] = Math.max(0, (inv[id] ?? 0) - 1);
+    setInventory(this.game, inv);
+  }
+
+  // ── Party select ──────────────────────────────────────────────────────────
+
+  /** [forced]: true when the active creature just fainted and a switch is mandatory (no cancel). */
+  private enterPartySelect(forced: boolean) {
+    this.state = forced ? "party-select-forced" : "party-select";
+    this.cursor = 0;
+    this.msgText.setText(forced ? "Choose next creature:" : "Switch to which creature?");
+    this.hideActionButtons();
+    const entries: GridEntry[] = this.party.map((c, i) => ({
+      label: c.name,
+      sublabel: `Lv.${c.level} HP ${c.currentHp}/${c.maxHp}`,
+      enabled: c.currentHp > 0 && i !== this.activeIndex,
+    }));
+    this.showGrid(entries, (i) => this.choosePartyMember(i, forced), forced ? null : () => this.enterMenu());
+  }
+
+  private choosePartyMember(i: number, forced: boolean) {
+    const target = this.party[i];
+    if (!target || target.currentHp <= 0 || i === this.activeIndex) {
+      if (!forced) this.showMsg("Can't switch to that creature!", () => { this.state = "party-select"; });
+      return;
+    }
+    this.hideGrid();
+    this.activeIndex = i;
+    this.pcSprite.setTexture(`creature-back-${this.pc.speciesId}`);
+    this.refreshPcHpPanel();
+    // Switching (forced or voluntary) always ends the current action and
+    // returns to the main menu - a voluntary switch doesn't cost a free
+    // enemy attack in this build, a deliberate simplification.
+    this.showMsg(`Go! ${this.pc.name}!`, () => this.enterMenu());
   }
 
   // ── Turn execution ────────────────────────────────────────────────────────
@@ -237,26 +426,54 @@ export class BattleScene extends Phaser.Scene {
     const ePrio = MOVES[eSlot.moveId]?.priority ?? 0;
     const playerFirst = pPrio > ePrio || (pPrio === ePrio && this.pc.speed >= this.wild.speed);
 
-    const doPlayer = (next: () => void) =>
-      this.doAttack(this.pc, this.wild, this.wildSprite, pSlot.moveId, () => {
+    const doPlayerAction = (next: () => void) =>
+      this.takeTurn(this.pc, this.wild, this.wildSprite, pSlot.moveId, () => {
         this.updateWildHp();
-        if (this.wild.currentHp <= 0)
-          this.showMsg(`Wild ${this.wild.name} fainted!`, () =>
-            this.showMsg(`${this.pc.name} gained Exp!`, () => this.exitBattle()));
-        else next();
+        if (this.wild.currentHp <= 0) { this.onWildFaint(); return; }
+        next();
       });
 
-    const doEnemy = (next: () => void) =>
-      this.doAttack(this.wild, this.pc, this.pcSprite, eSlot.moveId, () => {
-        this.updatePcHp();
-        if (this.pc.currentHp <= 0)
-          this.showMsg(`${this.pc.name} fainted!`, () =>
-            this.showMsg("You blacked out!", () => this.exitBattle()));
-        else next();
+    const doEnemyAction = (next: () => void) =>
+      this.takeTurn(this.wild, this.pc, this.pcSprite, eSlot.moveId, () => {
+        this.refreshPcHpPanel();
+        if (this.pc.currentHp <= 0) { this.onPcFaint(); return; }
+        next();
       });
 
-    if (playerFirst) doPlayer(() => doEnemy(() => this.enterMenu()));
-    else             doEnemy(() => doPlayer(() => this.enterMenu()));
+    if (playerFirst) doPlayerAction(() => doEnemyAction(() => this.endOfTurn()));
+    else              doEnemyAction(() => doPlayerAction(() => this.endOfTurn()));
+  }
+
+  /** Applies sleep/freeze/paralysis action-prevention before handing off to doAttack(). */
+  private takeTurn(
+    attacker: BattleCreature, defender: BattleCreature,
+    defSprite: Phaser.GameObjects.Image, moveId: string, onDone: () => void,
+  ) {
+    if (attacker.currentHp <= 0) { onDone(); return; } // fainted earlier this same turn
+
+    if (attacker.status === "sleep") {
+      if (Math.random() < 0.33) {
+        attacker.status = null;
+        this.showMsg(`${attacker.name} woke up!`, () => this.doAttack(attacker, defender, defSprite, moveId, onDone));
+      } else {
+        this.showMsg(`${attacker.name} is fast asleep.`, onDone);
+      }
+      return;
+    }
+    if (attacker.status === "freeze") {
+      if (Math.random() < 0.2) {
+        attacker.status = null;
+        this.showMsg(`${attacker.name} thawed out!`, () => this.doAttack(attacker, defender, defSprite, moveId, onDone));
+      } else {
+        this.showMsg(`${attacker.name} is frozen solid!`, onDone);
+      }
+      return;
+    }
+    if (attacker.status === "paralysis" && Math.random() < 0.25) {
+      this.showMsg(`${attacker.name} is fully paralyzed!`, onDone);
+      return;
+    }
+    this.doAttack(attacker, defender, defSprite, moveId, onDone);
   }
 
   private doAttack(
@@ -268,7 +485,7 @@ export class BattleScene extends Phaser.Scene {
     if (!move) { onDone(); return; }
 
     this.showMsg(`${attacker.name} used ${move.name}!`, () => {
-      if (move.category === "status") { onDone(); return; }
+      if (move.category === "status") { this.resolveStatusMove(move, defender, onDone); return; }
       const res = this.calcDamage(attacker, defender, moveId);
       defender.currentHp = Math.max(0, defender.currentHp - res.damage);
       this.shakeSprite(defSprite, () => {
@@ -276,6 +493,15 @@ export class BattleScene extends Phaser.Scene {
         else                    this.showEffMsg(res.effectiveness, onDone);
       });
     });
+  }
+
+  private resolveStatusMove(move: MoveDef, defender: BattleCreature, onDone: () => void) {
+    const cond = STATUS_MOVE_EFFECTS[move.id];
+    if (!cond) { onDone(); return; } // flavor-only move (growl, tail_whip, teleport, ...)
+    if (defender.status) { this.showMsg("But it failed!", onDone); return; }
+    if (Math.random() * 100 > move.accuracy) { this.showMsg("But it missed!", onDone); return; }
+    defender.status = cond;
+    this.showMsg(STATUS_APPLIED_MSG[cond](defender.name), onDone);
   }
 
   private showEffMsg(eff: number, onDone: () => void) {
@@ -312,6 +538,51 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  // ── End of turn (burn/poison ticks) ──────────────────────────────────────
+
+  private endOfTurn() {
+    this.applyResidualStatus(this.pc, true, () => {
+      if (this.pc.currentHp <= 0) { this.onPcFaint(); return; }
+      this.applyResidualStatus(this.wild, false, () => {
+        if (this.wild.currentHp <= 0) { this.onWildFaint(); return; }
+        this.enterMenu();
+      });
+    });
+  }
+
+  private applyResidualStatus(creature: BattleCreature, isPc: boolean, onDone: () => void) {
+    if (creature.currentHp <= 0 || (creature.status !== "burn" && creature.status !== "poison")) {
+      onDone();
+      return;
+    }
+    const dmg = Math.max(1, Math.floor(creature.maxHp / 16));
+    creature.currentHp = Math.max(0, creature.currentHp - dmg);
+    if (isPc) this.refreshPcHpPanel(); else this.updateWildHp();
+    const verb = creature.status === "burn" ? "hurt by its burn" : "hurt by poison";
+    this.showMsg(`${creature.name} is ${verb}!`, onDone);
+  }
+
+  // ── Fainting ──────────────────────────────────────────────────────────────
+
+  private onPcFaint() {
+    this.showMsg(`${this.pc.name} fainted!`, () => {
+      const hasReserve = this.party.some((c, i) => i !== this.activeIndex && c.currentHp > 0);
+      if (hasReserve) this.enterPartySelect(true);
+      else this.showMsg("You blacked out!", () => this.exitBattle());
+    });
+  }
+
+  private onWildFaint() {
+    this.showMsg(`Wild ${this.wild.name} fainted!`, () => {
+      const sp = SPECIES[this.wild.speciesId];
+      const expGain = Math.max(1, Math.floor(sp.baseExp * this.wild.level / 7));
+      const levelMsgs = gainExp(this.pc, expGain);
+      this.refreshPcHpPanel();
+      this.showMsg(`${this.pc.name} gained ${expGain} Exp!`, () =>
+        this.showSequential(levelMsgs, () => this.exitBattle()));
+    });
+  }
+
   // ── Capture Orb ───────────────────────────────────────────────────────────
 
   private doBallThrow() {
@@ -327,10 +598,18 @@ export class BattleScene extends Phaser.Scene {
 
     this.showMsg("You threw a Capture Orb!", () =>
       doShakes(shakes, () => {
-        if (caught)
-          this.showMsg(`${this.wild.name} was caught!`, () => this.exitBattle());
-        else
+        if (!caught) {
           this.showMsg(`Oh! ${this.wild.name} broke free!`, () => this.enterMenu());
+          return;
+        }
+        if (this.party.length < MAX_PARTY_SIZE) {
+          this.party.push(this.wild);
+          this.showMsg(`${this.wild.name} was caught!`, () => this.exitBattle());
+        } else {
+          // No storage/PC-box system yet (that's a later milestone) - a catch
+          // with a full party is just lost rather than crashing or blocking.
+          this.showMsg(`${this.wild.name} was caught! But your party is full...`, () => this.exitBattle());
+        }
       }),
     );
   }
@@ -348,6 +627,13 @@ export class BattleScene extends Phaser.Scene {
     this.pcHpFill.setSize(Math.max(1, Math.floor(HP_BAR_W * frac)), HP_BAR_H)
       .setFillStyle(this.hpColor(frac));
     this.pcHpText.setText(`${this.pc.currentHp}/${this.pc.maxHp}`);
+  }
+
+  /** Refreshes the whole PC panel (name/level/HP) - needed after a party switch, not just damage. */
+  private refreshPcHpPanel() {
+    this.pcNameText.setText(this.pc.name);
+    this.pcLevelText.setText(`Lv.${this.pc.level}`);
+    this.updatePcHp();
   }
 
   private hpColor(f: number): number {
@@ -376,8 +662,8 @@ export class BattleScene extends Phaser.Scene {
     g.fillStyle(0x0d1a2e, 0.88); g.fillRoundedRect(px, py, pw, ph, 4);
     g.lineStyle(1.5, 0x1e3a6a);  g.strokeRoundedRect(px, py, pw, ph, 4);
 
-    this.add.text(px + 8, py + 6, this.pc.name, { fontSize: "10px", color: "#e8eeff", fontFamily: "monospace" });
-    this.add.text(px + pw - 8, py + 6, `Lv.${this.pc.level}`, {
+    this.pcNameText = this.add.text(px + 8, py + 6, this.pc.name, { fontSize: "10px", color: "#e8eeff", fontFamily: "monospace" });
+    this.pcLevelText = this.add.text(px + pw - 8, py + 6, `Lv.${this.pc.level}`, {
       fontSize: "10px", color: "#aaccff", fontFamily: "monospace" }).setOrigin(1, 0);
     this.add.text(px + 8, py + 26, "HP", { fontSize: "9px", color: "#ffdd44", fontFamily: "monospace" });
     this.add.rectangle(px + 26, py + 30, HP_BAR_W, HP_BAR_H, 0x1a1a2a).setOrigin(0, 0.5);
@@ -386,7 +672,7 @@ export class BattleScene extends Phaser.Scene {
       fontSize: "9px", color: "#99bbdd", fontFamily: "monospace" }).setOrigin(1, 0);
   }
 
-  // ── Button rendering ──────────────────────────────────────────────────────
+  // ── Action button rendering ───────────────────────────────────────────────
 
   private showActionButtons() {
     this.btnGfx.setVisible(true);
@@ -412,49 +698,35 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  private showMoveButtons() {
-    this.moveGfx.setVisible(true);
-    for (let i = 0; i < 4; i++) {
-      const slot = this.pc.moves[i];
-      const mv   = slot ? MOVES[slot.moveId] : null;
-      this.moveLabels[i].setText(mv?.name ?? "—").setVisible(true);
-      this.movePpLabels[i].setText(slot ? `PP ${slot.pp}/${slot.maxPp}` : "").setVisible(true);
-    }
-    this.redrawMoveButtons();
-  }
-
-  private hideMoveButtons() {
-    this.moveGfx.clear().setVisible(false);
-    this.moveLabels.forEach(l => l.setVisible(false));
-    this.movePpLabels.forEach(l => l.setVisible(false));
-  }
-
-  private redrawMoveButtons() {
-    this.moveGfx.clear();
-    for (let i = 0; i < 4; i++) {
-      const r = Math.floor(i / 2), c = i % 2;
-      const [x, y] = [BTN_COLS[c], BTN_ROWS[r]];
-      const sel  = i === this.cursor;
-      const hasPp = (this.pc.moves[i]?.pp ?? 0) > 0;
-      this.moveGfx.fillStyle(sel ? 0x1a3a7a : (hasPp ? 0x0d1a3a : 0x0a0a1a));
-      this.moveGfx.fillRect(x, y, BTN_W, BTN_H);
-      this.moveGfx.lineStyle(1.5, sel ? 0x4488ff : (hasPp ? 0x1a2255 : 0x111111));
-      this.moveGfx.strokeRect(x, y, BTN_W, BTN_H);
-      // Type colour pip
-      const mv = this.pc.moves[i] ? MOVES[this.pc.moves[i].moveId] : null;
-      if (mv) {
-        this.moveGfx.fillStyle(TYPE_CHIP[mv.type] ?? 0x888888);
-        this.moveGfx.fillRect(x + BTN_W - 14, y + 5, 8, 8);
-      }
-    }
-  }
-
   // ── Exit ──────────────────────────────────────────────────────────────────
 
   private exitBattle() {
+    setParty(this.game, this.party);
     this.scene.resume("WorldScene");
     this.scene.resume("UIScene");
     this.scene.stop();
+  }
+
+  /**
+   * Phaser reuses this same Scene *instance* across scene.stop()/scene.launch()
+   * cycles (only create() re-runs each battle, not class field initializers),
+   * so without this, every array field create() populates via .push() (gridLabels,
+   * gridSubLabels, btnLabels) would keep accumulating the previous battle's
+   * already-destroyed GameObjects underneath the new ones - and since showGrid()
+   * always indexes [0..3], it would read those *stale* entries first, crashing
+   * (Phaser's Text/Frame internals throw on a destroyed texture) the moment any
+   * grid is shown in the second battle of a session. Clearing the whole display
+   * list on shutdown (Phaser's own SHUTDOWN scene event, wired up in create() -
+   * a same-named method alone is NOT auto-invoked the way init/preload/create/
+   * update are) destroys every GameObject create() made - including ones no
+   * field ever tracked, like the background shapes and HP-panel graphics - so
+   * each battle starts clean.
+   */
+  private handleShutdown() {
+    this.children.removeAll(true);
+    this.btnLabels = [];
+    this.gridLabels = [];
+    this.gridSubLabels = [];
   }
 }
 

@@ -1,4 +1,6 @@
 import Phaser from "phaser";
+import { makeBattleCreature } from "@/data/creatures";
+import { getInventory, setParty } from "@/systems/playerState";
 
 const TYPE_COLORS: Record<string, string> = {
   Grass:    "#4cbb5c", Poison:   "#8040c0", Fire:     "#e84a35",
@@ -225,6 +227,8 @@ export class StarterScene extends Phaser.Scene {
     this.confirmed = true;
     const starter  = STARTERS[this.selected];
     this.game.registry.set("starterSpeciesId", starter.speciesId);
+    setParty(this.game, [makeBattleCreature(starter.speciesId, 5)]);
+    getInventory(this.game); // seeds the starting inventory on first access
 
     this.nameText.setText(`You chose ${starter.name}!`).setColor("#ffdd88");
     this.descText.setText("Good luck on your adventure!");

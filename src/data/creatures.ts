@@ -41,6 +41,7 @@ export interface BattleCreature {
   moves: BattleMoveSlot[];
   status: StatusCondition | null;
   catchRate: number;
+  exp: number;
 }
 
 // ── Species database ──────────────────────────────────────────────────────────
@@ -120,15 +121,30 @@ export const SPECIES: Record<number, CreatureSpecies> = {
   },
 };
 
+// ── Stat / experience formulas ────────────────────────────────────────────────
+// Module-level (not nested in makeBattleCreature) so gainExp() can reuse them
+// when recomputing stats on a level-up.
+
+function hpForLevel(base: number, level: number): number {
+  return Math.floor((2 * base + 15) * level / 100) + level + 10;
+}
+
+function statForLevel(base: number, level: number): number {
+  return Math.floor((2 * base + 15) * level / 100) + 5;
+}
+
+/** "Medium Fast" cubic growth curve - total exp needed to reach [level]. */
+export function expForLevel(level: number): number {
+  return level ** 3;
+}
+
 // ── Battle creature factory ───────────────────────────────────────────────────
 
 export function makeBattleCreature(speciesId: number, level: number): BattleCreature {
   const sp = SPECIES[speciesId];
   if (!sp) throw new Error(`Unknown species id: ${speciesId}`);
 
-  const hp   = (b: number) => Math.floor((2 * b + 15) * level / 100) + level + 10;
-  const stat = (b: number) => Math.floor((2 * b + 15) * level / 100) + 5;
-  const maxHp = hp(sp.baseStats.hp);
+  const maxHp = hpForLevel(sp.baseStats.hp, level);
 
   // Last 4 moves the creature would know at this level
   const moveIds = sp.learnset
@@ -150,13 +166,50 @@ export function makeBattleCreature(speciesId: number, level: number): BattleCrea
     types: sp.types,
     maxHp,
     currentHp: maxHp,
-    atk:   stat(sp.baseStats.atk),
-    def:   stat(sp.baseStats.def),
-    spAtk: stat(sp.baseStats.spAtk),
-    spDef: stat(sp.baseStats.spDef),
-    speed: stat(sp.baseStats.speed),
+    atk:   statForLevel(sp.baseStats.atk, level),
+    def:   statForLevel(sp.baseStats.def, level),
+    spAtk: statForLevel(sp.baseStats.spAtk, level),
+    spDef: statForLevel(sp.baseStats.spDef, level),
+    speed: statForLevel(sp.baseStats.speed, level),
     moves,
     status: null,
     catchRate: sp.catchRate,
+    exp: expForLevel(level),
   };
+}
+
+/**
+ * Adds [amount] exp to [creature], applying any level-ups (recomputing stats,
+ * growing current HP by the same amount max HP grew, and learning any new
+ * moves the learnset unlocks, up to the existing 4-move-slot cap). Returns the
+ * sequence of messages to show, in order ("grew to Lv.X!", "learned Y!", ...).
+ */
+export function gainExp(creature: BattleCreature, amount: number): string[] {
+  const messages: string[] = [];
+  creature.exp += amount;
+  const sp = SPECIES[creature.speciesId];
+
+  while (creature.level < 100 && creature.exp >= expForLevel(creature.level + 1)) {
+    const oldMaxHp = creature.maxHp;
+    creature.level++;
+    creature.maxHp = hpForLevel(sp.baseStats.hp, creature.level);
+    creature.currentHp += creature.maxHp - oldMaxHp;
+    creature.atk   = statForLevel(sp.baseStats.atk, creature.level);
+    creature.def   = statForLevel(sp.baseStats.def, creature.level);
+    creature.spAtk = statForLevel(sp.baseStats.spAtk, creature.level);
+    creature.spDef = statForLevel(sp.baseStats.spDef, creature.level);
+    creature.speed = statForLevel(sp.baseStats.speed, creature.level);
+    messages.push(`${creature.name} grew to Lv.${creature.level}!`);
+
+    for (const [learnLevel, moveId] of sp.learnset) {
+      const alreadyKnown = creature.moves.some(m => m.moveId === moveId);
+      if (learnLevel === creature.level && !alreadyKnown && creature.moves.length < 4) {
+        const mv = MOVES[moveId];
+        creature.moves.push({ moveId, pp: mv?.pp ?? 10, maxPp: mv?.pp ?? 10 });
+        messages.push(`${creature.name} learned ${mv?.name ?? moveId}!`);
+      }
+    }
+  }
+
+  return messages;
 }
