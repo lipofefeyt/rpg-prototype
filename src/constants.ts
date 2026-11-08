@@ -20,6 +20,11 @@ export const CAVE_COLS     = 25;
 export const CAVE_ROWS     = 20;
 export const CAVE_EXIT_COL = 12;
 
+// Seaside zone dimensions — reached via the south end of the overworld path
+export const SEASIDE_COLS     = 26;
+export const SEASIDE_ROWS     = 20;
+export const SEASIDE_PATH_COL = 13; // col index of the zone's vertical path
+
 // Player/NPC spritesheet — idle frame base per direction (frame = base + 0/1/2)
 export const ANIM_BASE = { down: 0, up: 3, left: 6, right: 9 } as const;
 

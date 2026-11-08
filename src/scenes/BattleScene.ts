@@ -4,6 +4,8 @@ import { MOVES, type MoveDef } from "@/data/moves";
 import { getTotalEffect } from "@/data/typeChart";
 import { ITEMS } from "@/data/items";
 import { MAX_PARTY_SIZE, getParty, setParty, getInventory, setInventory } from "@/systems/playerState";
+import { autosave } from "@/systems/saveLoad";
+import type { WorldScene } from "@/scenes/WorldScene";
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 const W = 480, H = 320;
@@ -702,6 +704,8 @@ export class BattleScene extends Phaser.Scene {
 
   private exitBattle() {
     setParty(this.game, this.party);
+    const world = this.scene.get("WorldScene") as WorldScene;
+    autosave(this.game, world.getSaveState());
     this.scene.resume("WorldScene");
     this.scene.resume("UIScene");
     this.scene.stop();

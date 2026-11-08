@@ -5,6 +5,7 @@ import { ZONES, type ZoneDef, type NpcDef } from "@/data/zones";
 import type { BattleInitData } from "@/scenes/BattleScene";
 import { SCRIPTS } from "@/data/scripts";
 import { getTouchState, type TouchState } from "@/systems/touchInput";
+import { autosave, type WorldSaveState } from "@/systems/saveLoad";
 
 const MOVE_DURATION = 150;
 
@@ -70,9 +71,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create() {
-    const startZone = ZONES["overworld"];
-    this.tileX = startZone.defaultSpawnX;
-    this.tileY = startZone.defaultSpawnY;
+    const resume = this.game.registry.get("resumeState") as WorldSaveState | undefined;
+    this.game.registry.remove("resumeState"); // one-shot: consumed here, never reapplied
+
+    const startZone = ZONES[resume?.zoneId ?? "overworld"];
+    this.tileX = resume?.tileX ?? startZone.defaultSpawnX;
+    this.tileY = resume?.tileY ?? startZone.defaultSpawnY;
+    this.direction = resume?.direction ?? "down";
 
     // ── Player ──────────────────────────────────────────────────────────────
     this.player = this.add.sprite(
@@ -102,7 +107,7 @@ export class WorldScene extends Phaser.Scene {
 
     // ── Animations ───────────────────────────────────────────────────────────
     this.registerAnimations();
-    this.player.play("idle-down");
+    this.player.play(`idle-${this.direction}`);
 
     // ── Day/night overlay (fixed to screen, depth above world but below UI) ──
     const { width: W, height: H } = this.scale;
@@ -119,6 +124,13 @@ export class WorldScene extends Phaser.Scene {
     }, this);
 
     this.scene.launch("UIScene");
+
+    autosave(this.game, this.getSaveState()); // covers "quit before taking a single step"
+  }
+
+  /** Current position/zone, for the save system (and BattleScene's exit save). */
+  getSaveState(): WorldSaveState {
+    return { zoneId: this.currentZone.id, tileX: this.tileX, tileY: this.tileY, direction: this.direction };
   }
 
   update(_time: number, delta: number) {
@@ -191,7 +203,10 @@ export class WorldScene extends Phaser.Scene {
       );
       this.player.play(`idle-${this.direction}`, true);
       this.cameras.main.fadeIn(200, 0, 0, 0);
-      this.cameras.main.once("camerafadeincomplete", () => { this.isMoving = false; });
+      this.cameras.main.once("camerafadeincomplete", () => {
+        this.isMoving = false;
+        autosave(this.game, this.getSaveState());
+      });
     });
   }
 
@@ -253,6 +268,7 @@ export class WorldScene extends Phaser.Scene {
         this.player.play(`idle-${this.direction}`, true);
         this.checkTransition();
         this.checkEncounter();
+        autosave(this.game, this.getSaveState());
       },
     });
   }

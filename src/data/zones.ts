@@ -4,6 +4,7 @@ import {
   TILE_TALLGRASS as TG, TILE_CAVE_FLOOR as CF,
   MAP_COLS, MAP_ROWS, PATH_ROW, PATH_COL,
   CAVE_COLS, CAVE_ROWS, CAVE_EXIT_COL,
+  SEASIDE_COLS, SEASIDE_ROWS, SEASIDE_PATH_COL,
 } from "@/constants";
 
 // ── Shared interfaces ────────────────────────────────────────────────────────
@@ -141,6 +142,33 @@ function buildCave(): number[][] {
   return m;
 }
 
+function buildSeaside(): number[][] {
+  const m = Array.from({ length: SEASIDE_ROWS }, () => Array<number>(SEASIDE_COLS).fill(G));
+
+  // North/west/east border = trees; the south edge opens onto the ocean.
+  for (let x = 0; x < SEASIDE_COLS; x++) m[0][x] = T;
+  for (let y = 0; y < SEASIDE_ROWS - 1; y++) { m[y][0] = T; m[y][SEASIDE_COLS - 1] = T; }
+  for (let x = 0; x < SEASIDE_COLS; x++) m[SEASIDE_ROWS - 1][x] = W;
+
+  // Vertical path down from the overworld entrance to the shore.
+  for (let y = 1; y < SEASIDE_ROWS - 1; y++) m[y][SEASIDE_PATH_COL] = P;
+
+  // Tall-grass patches either side of the path, near the water — encounters.
+  const tgPatches: [number, number, number, number][] = [
+    [9, 13, 3, 8],                        // west patch
+    [9, 13, SEASIDE_COLS - 9, SEASIDE_COLS - 4], // east patch
+  ];
+  for (const [r0, r1, c0, c1] of tgPatches) {
+    for (let y = r0; y <= r1; y++) {
+      for (let x = c0; x <= c1; x++) {
+        if (m[y][x] === G) m[y][x] = TG;
+      }
+    }
+  }
+
+  return m;
+}
+
 // ── Zone registry ─────────────────────────────────────────────────────────────
 
 export const ZONES: Record<string, ZoneDef> = {
@@ -159,9 +187,11 @@ export const ZONES: Record<string, ZoneDef> = {
     signs: [
       { tileX: 24, tileY: 19, scriptId: "sign_crossroads" },
       { tileX: PATH_COL, tileY: 3, scriptId: "sign_cave_entrance" },
+      { tileX: PATH_COL, tileY: MAP_ROWS - 4, scriptId: "sign_seaside_road" },
     ],
     transitions: [
       { tileX: PATH_COL, tileY: 1, targetZoneId: "cave", spawnX: CAVE_EXIT_COL, spawnY: CAVE_ROWS - 3 },
+      { tileX: PATH_COL, tileY: MAP_ROWS - 2, targetZoneId: "seaside", spawnX: SEASIDE_PATH_COL, spawnY: 2 },
     ],
     encounterRate: 0.15,
     encounterPool: [
@@ -192,5 +222,31 @@ export const ZONES: Record<string, ZoneDef> = {
     ],
     encounterRate: 0,
     encounterPool: [],
+  },
+
+  seaside: {
+    id: "seaside",
+    cols: SEASIDE_COLS,
+    rows: SEASIDE_ROWS,
+    mapData: buildSeaside(),
+    defaultSpawnX: SEASIDE_PATH_COL,
+    defaultSpawnY: 2,
+    npcs: [
+      { id: "fisherman", name: "Fisherman Tam", tileX: SEASIDE_PATH_COL - 3, tileY: 8,  facing: "right", scriptId: "npc_fisherman", tint: 0xaaccee },
+      { id: "sailor",    name: "Sailor Reyes",  tileX: SEASIDE_PATH_COL + 3, tileY: 12, facing: "left",  scriptId: "npc_sailor",    tint: 0xeecc88 },
+    ],
+    signs: [
+      { tileX: SEASIDE_PATH_COL, tileY: SEASIDE_ROWS - 3, scriptId: "sign_seaside_shore" },
+    ],
+    transitions: [
+      { tileX: SEASIDE_PATH_COL, tileY: 1, targetZoneId: "overworld", spawnX: PATH_COL, spawnY: MAP_ROWS - 3 },
+    ],
+    encounterRate: 0.15,
+    encounterPool: [
+      { speciesId: 129, minLevel: 6, maxLevel: 10, weight: 30 }, // Finflop
+      { speciesId: 54,  minLevel: 6, maxLevel: 9,  weight: 25 }, // Quackle
+      { speciesId: 16,  minLevel: 5, maxLevel: 9,  weight: 25 }, // Flitterwing
+      { speciesId: 74,  minLevel: 6, maxLevel: 10, weight: 20 }, // Rockling
+    ],
   },
 };

@@ -22,6 +22,16 @@ export const SCRIPTS: Record<string, string[]> = {
     "The underground lake at the far end is stunning.\nJust watch your step near the edge!",
   ],
 
+  // ── Seaside Town NPCs ────────────────────────────────────────────────────
+  npc_fisherman: [
+    "Mornin'! The water's full of Finflop and\nQuackle today — good signs for a catch.",
+    "Rockling like to hide in the shallows near\nthe tide pools. Worth a look if you're patient.",
+  ],
+  npc_sailor: [
+    "Just got back from a run up the coast.\nNothing but open water past the horizon, far as I've seen.",
+    "Someday I'll chart what's out there properly.\nFor now, Seaside Town suits me fine.",
+  ],
+
   // ── Signs ────────────────────────────────────────────────────────────────
   sign_crossroads: [
     "── CROSSROADS ──\n↑ Cave Road    ↓ Seaside Town\n← Deep Forest  → Eastern Plains",
@@ -31,5 +41,11 @@ export const SCRIPTS: Record<string, string[]> = {
   ],
   sign_cave_exit: [
     "EXIT ↓\nCrossroads Village — 5 min walk",
+  ],
+  sign_seaside_road: [
+    "↓ SEASIDE TOWN\nFollow the path south to the coast.",
+  ],
+  sign_seaside_shore: [
+    "The shoreline stretches out of sight in both\ndirections. The water glitters in the sun.",
   ],
 };
