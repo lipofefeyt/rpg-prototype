@@ -28,6 +28,7 @@ export const MOVES: Record<string, MoveDef> = {
   mean_look:     { id: "mean_look",     name: "Evil Eye",     type: "normal",   category: "status",   power: 0,   accuracy: 100, pp: 5,  priority: 0 },
   // Fire
   ember:         { id: "ember",         name: "Firebolt",         type: "fire",     category: "special",  power: 40,  accuracy: 100, pp: 25, priority: 0 },
+  scorch:        { id: "scorch",        name: "Scorch",        type: "fire",     category: "special",  power: 60,  accuracy: 100, pp: 20, priority: 0 },
   flamethrower:  { id: "flamethrower",  name: "Inferno",  type: "fire",     category: "special",  power: 95,  accuracy: 100, pp: 15, priority: 0 },
   // Water
   water_gun:     { id: "water_gun",     name: "Water Jet",     type: "water",    category: "special",  power: 40,  accuracy: 100, pp: 25, priority: 0 },

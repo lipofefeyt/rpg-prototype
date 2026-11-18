@@ -61,7 +61,7 @@ export const SPECIES: Record<number, CreatureSpecies> = {
     id: 4, name: "Mage", types: ["fire"],
     baseStats: { hp: 39, atk: 52, def: 43, spAtk: 60, spDef: 50, speed: 65 },
     catchRate: 45, baseExp: 62,
-    learnset: [[1,"scratch"],[1,"growl"],[7,"ember"],[10,"metal_claw"],[17,"flamethrower"]],
+    learnset: [[1,"scratch"],[1,"growl"],[3,"ember"],[9,"scorch"],[17,"flamethrower"]],
   },
   7: {
     id: 7, name: "Knight", types: ["steel"],
@@ -251,10 +251,21 @@ export function gainExp(creature: BattleCreature, amount: number): string[] {
 
     for (const [learnLevel, moveId] of sp.learnset) {
       const alreadyKnown = creature.moves.some(m => m.moveId === moveId);
-      if (learnLevel === creature.level && !alreadyKnown && creature.moves.length < 4) {
-        const mv = MOVES[moveId];
-        creature.moves.push({ moveId, pp: mv?.pp ?? 10, maxPp: mv?.pp ?? 10 });
+      if (learnLevel !== creature.level || alreadyKnown) continue;
+      const mv = MOVES[moveId];
+      const slot = { moveId, pp: mv?.pp ?? 10, maxPp: mv?.pp ?? 10 };
+      if (creature.moves.length < 4) {
+        creature.moves.push(slot);
         messages.push(`${creature.name} learned ${mv?.name ?? moveId}!`);
+        continue;
+      }
+      // Full move list: a stronger damaging move replaces the weakest known move
+      // (status moves go first), so higher-level attacks stay reachable.
+      const power = (id: string) => MOVES[id]?.power ?? 0;
+      const weakest = creature.moves.reduce((w, m) => (power(m.moveId) < power(w.moveId) ? m : w), creature.moves[0]);
+      if (mv && mv.power > power(weakest.moveId)) {
+        creature.moves[creature.moves.indexOf(weakest)] = slot;
+        messages.push(`${creature.name} learned ${mv.name}, forgetting ${MOVES[weakest.moveId]?.name ?? weakest.moveId}!`);
       }
     }
   }
