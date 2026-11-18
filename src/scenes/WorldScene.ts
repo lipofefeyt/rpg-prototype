@@ -222,6 +222,12 @@ export class WorldScene extends Phaser.Scene {
       ANIM_BASE[def.facing],
     ).setDepth(1);
     if (key === "player") spr.setTint(def.tint);
+    // Subtle idle bob, desynced per NPC so a town doesn't move in lockstep.
+    const bob = this.tweens.add({
+      targets: spr, y: spr.y - 1, duration: 650, delay: Math.random() * 700,
+      yoyo: true, repeat: -1, ease: "Sine.easeInOut",
+    });
+    spr.once("destroy", () => bob.stop());
     return spr;
   }
 

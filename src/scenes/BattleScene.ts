@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { anchor, playEntrance, playSendIn, playAttack, playBuff, playHit, playFaint, playTamed, playWobble } from "@/gfx/spriteAnim";
 import { makeBattleCreature, gainExp, SPECIES, type BattleCreature, type StatusCondition } from "@/data/creatures";
 import { MOVES, type MoveDef } from "@/data/moves";
 import { getTotalEffect } from "@/data/typeChart";
@@ -143,6 +144,10 @@ export class BattleScene extends Phaser.Scene {
     this.pcSprite = this.add
       .image(PLYR_X, PLYR_Y, `creature-back-${this.pc.speciesId}`)
       .setOrigin(0.5, 1);
+    anchor(this.wildSprite);
+    anchor(this.pcSprite);
+    playEntrance(this, this.wildSprite, 1);
+    playEntrance(this, this.pcSprite, -1);
 
     // HP panels
     this.buildWildHpPanel();
@@ -410,6 +415,7 @@ export class BattleScene extends Phaser.Scene {
     this.hideGrid();
     this.activeIndex = i;
     this.pcSprite.setTexture(`creature-back-${this.pc.speciesId}`);
+    playSendIn(this, this.pcSprite);
     this.refreshPcHpPanel();
     // Switching (forced or voluntary) always ends the current action and
     // returns to the main menu - a voluntary switch doesn't cost a free
@@ -486,14 +492,29 @@ export class BattleScene extends Phaser.Scene {
     const move = MOVES[moveId];
     if (!move) { onDone(); return; }
 
+    const atkSprite = defSprite === this.wildSprite ? this.pcSprite : this.wildSprite;
+    const dir: -1 | 1 = defSprite === this.wildSprite ? 1 : -1; // direction from attacker toward defender
+    const color = TYPE_CHIP[move.type] ?? 0xffffff;
+
     this.showMsg(`${attacker.name} used ${move.name}!`, () => {
-      if (move.category === "status") { this.resolveStatusMove(move, defender, onDone); return; }
+      if (move.category === "status") {
+        playBuff(this, atkSprite, color, () => this.resolveStatusMove(move, defender, onDone));
+        return;
+      }
       const res = this.calcDamage(attacker, defender, moveId);
       defender.currentHp = Math.max(0, defender.currentHp - res.damage);
-      this.shakeSprite(defSprite, () => {
-        if (res.isCrit)         this.showMsg("A critical hit!", () => this.showEffMsg(res.effectiveness, onDone));
-        else                    this.showEffMsg(res.effectiveness, onDone);
-      });
+      const style = move.category === "physical" ? "melee" : "cast";
+      // The hit animation is kicked off at impact; the turn continues once both
+      // the attacker has settled and the defender's recoil has finished.
+      let pending = 2;
+      const join = () => {
+        if (--pending > 0) return;
+        if (res.isCrit) this.showMsg("A critical hit!", () => this.showEffMsg(res.effectiveness, onDone));
+        else            this.showEffMsg(res.effectiveness, onDone);
+      };
+      playAttack(this, atkSprite, { dir, style, color, target: defSprite }, () => {
+        playHit(this, defSprite, dir, join);
+      }, join);
     });
   }
 
@@ -528,18 +549,6 @@ export class BattleScene extends Phaser.Scene {
     return { damage, effectiveness: typeEff, isCrit };
   }
 
-  private shakeSprite(sprite: Phaser.GameObjects.Image, onDone: () => void) {
-    const ox = sprite.x;
-    this.tweens.add({
-      targets: sprite, x: ox + 6, duration: 45, yoyo: true, repeat: 2, ease: "Linear",
-      onComplete: () => {
-        sprite.x = ox;
-        sprite.setTint(0xffffff);
-        this.time.delayedCall(80, () => { sprite.clearTint(); onDone(); });
-      },
-    });
-  }
-
   // ── End of turn (burn/poison ticks) ──────────────────────────────────────
 
   private endOfTurn() {
@@ -567,21 +576,25 @@ export class BattleScene extends Phaser.Scene {
   // ── Fainting ──────────────────────────────────────────────────────────────
 
   private onPcFaint() {
-    this.showMsg(`${this.pc.name} is knocked out!`, () => {
-      const hasReserve = this.party.some((c, i) => i !== this.activeIndex && c.currentHp > 0);
-      if (hasReserve) this.enterPartySelect(true);
-      else this.showMsg("Your party has fallen!", () => this.exitBattle());
+    playFaint(this, this.pcSprite, () => {
+      this.showMsg(`${this.pc.name} is knocked out!`, () => {
+        const hasReserve = this.party.some((c, i) => i !== this.activeIndex && c.currentHp > 0);
+        if (hasReserve) this.enterPartySelect(true);
+        else this.showMsg("Your party has fallen!", () => this.exitBattle());
+      });
     });
   }
 
   private onWildFaint() {
-    this.showMsg(`The wild ${this.wild.name} is defeated!`, () => {
-      const sp = SPECIES[this.wild.speciesId];
-      const expGain = Math.max(1, Math.floor(sp.baseExp * this.wild.level / 7));
-      const levelMsgs = gainExp(this.pc, expGain);
-      this.refreshPcHpPanel();
-      this.showMsg(`${this.pc.name} gained ${expGain} Exp!`, () =>
-        this.showSequential(levelMsgs, () => this.exitBattle()));
+    playFaint(this, this.wildSprite, () => {
+      this.showMsg(`The wild ${this.wild.name} is defeated!`, () => {
+        const sp = SPECIES[this.wild.speciesId];
+        const expGain = Math.max(1, Math.floor(sp.baseExp * this.wild.level / 7));
+        const levelMsgs = gainExp(this.pc, expGain);
+        this.refreshPcHpPanel();
+        this.showMsg(`${this.pc.name} gained ${expGain} Exp!`, () =>
+          this.showSequential(levelMsgs, () => this.exitBattle()));
+      });
     });
   }
 
@@ -593,17 +606,26 @@ export class BattleScene extends Phaser.Scene {
     const caught = Math.random() * 255 < (3 * maxHp - 2 * hp) / (3 * maxHp) * catchRate;
     const shakes = caught ? 3 : Math.floor(Math.random() * 3);
 
+    // The monster shrinks into the charm, which then wobbles once per shake.
+    const charm = this.add.rectangle(WILD_X, WILD_Y - 14, 10, 10, 0xe0b030)
+      .setStrokeStyle(2, 0x7a5a10).setVisible(false);
+    playTamed(this, this.wildSprite, () => charm.setVisible(true));
+
     const doShakes = (n: number, cb: () => void) => {
       if (n <= 0) { cb(); return; }
+      playWobble(this, charm);
       this.showMsg("… *shake* …", () => doShakes(n - 1, cb));
     };
 
     this.showMsg("You threw a Taming Charm!", () =>
       doShakes(shakes, () => {
         if (!caught) {
+          charm.destroy();
+          playSendIn(this, this.wildSprite);
           this.showMsg(`${this.wild.name} broke free of the charm!`, () => this.enterMenu());
           return;
         }
+        this.tweens.add({ targets: charm, y: charm.y - 18, alpha: 0, duration: 450 });
         if (this.party.length < MAX_PARTY_SIZE) {
           this.party.push(this.wild);
           this.showMsg(`${this.wild.name} was tamed!`, () => this.exitBattle());
