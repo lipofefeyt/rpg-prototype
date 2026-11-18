@@ -35,7 +35,7 @@ export const SCRIPTS: Record<string, string[]> = {
 
   // ── Seaside Town NPCs ────────────────────────────────────────────────────
   npc_fisherman: [
-    "Mornin'! The water's full of River Carp and\nMarsh Ducks today — good signs for a catch.",
+    "Mornin'! The water's full of River Pike and\nMarsh Ducks today — good signs for a catch.",
     "Stone Golems like to hide in the shallows near\nthe tide pools. Worth a look if you're patient — and armed.",
   ],
   npc_sailor: [

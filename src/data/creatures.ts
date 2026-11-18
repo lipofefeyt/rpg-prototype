@@ -100,10 +100,10 @@ export const SPECIES: Record<number, CreatureSpecies> = {
     learnset: [[1,"scratch"],[1,"tail_whip"],[10,"water_gun"],[13,"confusion"],[22,"surf"]],
   },
   63: {
-    id: 63, name: "Hedge Sprite", types: ["psychic"],
-    baseStats: { hp: 25, atk: 20, def: 15, spAtk: 105, spDef: 55, speed: 90 },
-    catchRate: 200, baseExp: 73,
-    learnset: [[1,"teleport"],[16,"confusion"]],
+    id: 63, name: "Hedge Sprite", types: ["grass"],
+    baseStats: { hp: 45, atk: 35, def: 50, spAtk: 70, spDef: 70, speed: 55 },
+    catchRate: 150, baseExp: 70,
+    learnset: [[1,"vine_whip"],[1,"growl"],[9,"poison_powder"],[14,"confusion"]],
   },
   74: {
     id: 74, name: "Stone Golem", types: ["rock", "ground"],
@@ -160,10 +160,10 @@ export const SPECIES: Record<number, CreatureSpecies> = {
     learnset: [[1,"scratch"],[1,"sand_attack"],[8,"gust"],[13,"quick_attack"],[18,"wing_attack"]],
   },
   129: {
-    id: 129, name: "River Carp", types: ["water"],
-    baseStats: { hp: 20, atk: 10, def: 55, spAtk: 15, spDef: 20, speed: 80 },
-    catchRate: 255, baseExp: 20,
-    learnset: [[1,"splash"],[15,"tackle"]],
+    id: 129, name: "River Pike", types: ["water"],
+    baseStats: { hp: 38, atk: 52, def: 38, spAtk: 25, spDef: 35, speed: 62 },
+    catchRate: 190, baseExp: 55,
+    learnset: [[1,"tackle"],[1,"tail_whip"],[6,"water_gun"],[10,"bite"]],
   },
 };
 

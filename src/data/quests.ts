@@ -68,12 +68,12 @@ export const QUESTS: Record<string, QuestDef> = Object.fromEntries(([
     ready: ["You've seen it with your own eyes. Good.\nThe miners will want to hear of it.", "This belonged to a hero of old, like you.\nMay it serve you better than the dust."],
   },
   {
-    id: "carp", title: "Carp Season", giverName: "Fisherman Tam",
-    summary: "Defeat 3 River Carp tangling the nets.",
-    objective: { kind: "defeat", speciesId: 129, count: 3, label: "River Carp defeated" },
+    id: "carp", title: "Pike Season", giverName: "Fisherman Tam",
+    summary: "Defeat 3 River Pike tangling the nets.",
+    objective: { kind: "defeat", speciesId: 129, count: 3, label: "River Pike defeated" },
     reward: { gold: 70, items: { padded_robe: 1 } },
-    offer: ["The carp are thick as thieves today and\nthey're tearing my nets to ribbons.", "Clear out three and the robe's yours."],
-    active: ["Nets are still shredded. Three carp!"],
+    offer: ["The pike are thick as thieves today and\nthey're tearing my nets to ribbons.", "Clear out three and the robe's yours."],
+    active: ["Nets are still shredded. Three pike!"],
     ready: ["Smooth water at last! Here's the robe I\npromised."],
   },
   {
