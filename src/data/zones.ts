@@ -17,6 +17,8 @@ export interface NpcDef {
   facing: Direction;
   scriptId: string;
   tint: number;
+  /** If true, the dialogue is followed by the shop screen. */
+  shop?: boolean;
 }
 
 export interface SignDef {
@@ -182,7 +184,7 @@ export const ZONES: Record<string, ZoneDef> = {
     npcs: [
       { id: "elder",    name: "Elder Oak",     tileX: 23, tileY: 18, facing: "right", scriptId: "npc_elder",    tint: 0xffddaa },
       { id: "guard",    name: "Guard",         tileX: 27, tileY: 21, facing: "left",  scriptId: "npc_guard",    tint: 0xaabbff },
-      { id: "merchant", name: "Merchant",      tileX: 23, tileY: 23, facing: "right", scriptId: "npc_merchant", tint: 0xaaffbb },
+      { id: "merchant", name: "Merchant",      tileX: 23, tileY: 23, facing: "right", scriptId: "npc_merchant", tint: 0xaaffbb, shop: true },
     ],
     signs: [
       { tileX: 24, tileY: 19, scriptId: "sign_crossroads" },

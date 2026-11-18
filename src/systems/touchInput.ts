@@ -18,12 +18,14 @@ export interface TouchState {
   left: boolean;
   right: boolean;
   actionPressed: boolean;
+  /** One-shot, like actionPressed: set by the on-screen menu button. */
+  menuPressed: boolean;
 }
 
 export function getTouchState(game: Phaser.Game): TouchState {
   let state = game.registry.get("touchState") as TouchState | undefined;
   if (!state) {
-    state = { up: false, down: false, left: false, right: false, actionPressed: false };
+    state = { up: false, down: false, left: false, right: false, actionPressed: false, menuPressed: false };
     game.registry.set("touchState", state);
   }
   return state;

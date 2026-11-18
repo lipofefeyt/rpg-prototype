@@ -16,6 +16,7 @@ const LABEL_STYLE  = { fontSize: "13px", color: "#aaccff", fontFamily: "monospac
 export class TouchControls {
   private readonly buttons: Phaser.GameObjects.Rectangle[] = [];
   private readonly actionButton: Phaser.GameObjects.Arc;
+  private readonly menuButton: Phaser.GameObjects.Rectangle;
   private readonly labels: Phaser.GameObjects.Text[] = [];
 
   constructor(scene: Phaser.Scene, state: TouchState) {
@@ -66,6 +67,18 @@ export class TouchControls {
       .setScrollFactor(0)
       .setDepth(depth);
     this.labels.push(actionLabel);
+
+    // Menu button (top-right): opens the pause menu (equipment, pack).
+    this.menuButton = scene.add.rectangle(W - 10 - 18, 10 + 14, 36, 28, PANEL_FILL, PANEL_ALPHA)
+      .setStrokeStyle(2, STROKE_COLOR, 1)
+      .setScrollFactor(0)
+      .setDepth(depth)
+      .setInteractive({ useHandCursor: false });
+    this.menuButton.on("pointerdown", () => { state.menuPressed = true; });
+    this.labels.push(
+      scene.add.text(W - 10 - 18, 10 + 14, "MENU", { ...LABEL_STYLE, fontSize: "9px" })
+        .setOrigin(0.5).setScrollFactor(0).setDepth(depth),
+    );
   }
 
   setVisible(visible: boolean): void {
@@ -73,6 +86,8 @@ export class TouchControls {
       b.setVisible(visible);
       if (visible) b.setInteractive({ useHandCursor: false }); else b.disableInteractive();
     }
+    this.menuButton.setVisible(visible);
+    if (visible) this.menuButton.setInteractive({ useHandCursor: false }); else this.menuButton.disableInteractive();
     this.actionButton.setVisible(visible);
     if (visible) this.actionButton.setInteractive({ useHandCursor: false }); else this.actionButton.disableInteractive();
     for (const l of this.labels) l.setVisible(visible);

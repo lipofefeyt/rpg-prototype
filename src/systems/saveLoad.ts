@@ -1,6 +1,6 @@
 import type Phaser from "phaser";
 import { Preferences } from "@capacitor/preferences";
-import { getParty, setParty, getInventory, setInventory } from "@/systems/playerState";
+import { getParty, setParty, getInventory, setInventory, getGold, setGold, STARTING_GOLD } from "@/systems/playerState";
 import type { Direction } from "@/types";
 
 /**
@@ -10,7 +10,7 @@ import type { Direction } from "@/types";
  * SharedPreferences instead of WebView storage.
  */
 const SAVE_KEY = "rpgSave";
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2; // v2 added gold; v1 saves still load (gold defaults)
 
 export interface WorldSaveState {
   zoneId: string;
@@ -24,6 +24,7 @@ interface SaveData extends WorldSaveState {
   party: ReturnType<typeof getParty>;
   inventory: ReturnType<typeof getInventory>;
   starterSpeciesId: number;
+  gold: number;
 }
 
 export async function saveGame(game: Phaser.Game, world: WorldSaveState): Promise<void> {
@@ -32,6 +33,7 @@ export async function saveGame(game: Phaser.Game, world: WorldSaveState): Promis
     party: getParty(game),
     inventory: getInventory(game),
     starterSpeciesId: (game.registry.get("starterSpeciesId") as number | undefined) ?? 4,
+    gold: getGold(game),
     ...world,
   };
   await Preferences.set({ key: SAVE_KEY, value: JSON.stringify(data) });
@@ -47,7 +49,8 @@ export async function loadGame(): Promise<SaveData | null> {
   if (!value) return null;
   try {
     const data = JSON.parse(value) as SaveData;
-    if (data.version !== SAVE_VERSION) return null;
+    if (data.version !== SAVE_VERSION && data.version !== 1) return null;
+    if (typeof data.gold !== "number") data.gold = STARTING_GOLD; // v1 save
     return data;
   } catch {
     return null;
@@ -58,6 +61,7 @@ export async function loadGame(): Promise<SaveData | null> {
 export function applySaveToRegistry(game: Phaser.Game, data: SaveData): WorldSaveState {
   setParty(game, data.party);
   setInventory(game, data.inventory);
+  setGold(game, data.gold);
   game.registry.set("starterSpeciesId", data.starterSpeciesId);
   return { zoneId: data.zoneId, tileX: data.tileX, tileY: data.tileY, direction: data.direction };
 }

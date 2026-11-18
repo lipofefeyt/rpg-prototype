@@ -1,10 +1,11 @@
 import Phaser from "phaser";
 import { anchor, playEntrance, playSendIn, playAttack, playBuff, playHit, playFaint, playTamed, playWobble } from "@/gfx/spriteAnim";
+import { EQUIPMENT, goldReward, rollGearDrop } from "@/data/equipment";
 import { makeBattleCreature, gainExp, SPECIES, type BattleCreature, type StatusCondition } from "@/data/creatures";
 import { MOVES, type MoveDef } from "@/data/moves";
 import { getTotalEffect } from "@/data/typeChart";
 import { ITEMS } from "@/data/items";
-import { MAX_PARTY_SIZE, getParty, setParty, getInventory, setInventory } from "@/systems/playerState";
+import { MAX_PARTY_SIZE, addGold, addToInventory, getParty, setParty, getInventory, setInventory } from "@/systems/playerState";
 import { autosave } from "@/systems/saveLoad";
 import type { WorldScene } from "@/scenes/WorldScene";
 
@@ -592,8 +593,19 @@ export class BattleScene extends Phaser.Scene {
         const expGain = Math.max(1, Math.floor(sp.baseExp * this.wild.level / 7));
         const levelMsgs = gainExp(this.pc, expGain);
         this.refreshPcHpPanel();
+
+        // Spoils: gold always, gear sometimes.
+        const gold = goldReward(this.wild.level);
+        addGold(this.game, gold);
+        const spoils = [`Found ${gold} gold!`];
+        const drop = rollGearDrop(this.wild.level);
+        if (drop) {
+          addToInventory(this.game, drop);
+          spoils.push(`The ${this.wild.name} dropped ${EQUIPMENT[drop].name}!`);
+        }
+
         this.showMsg(`${this.pc.name} gained ${expGain} Exp!`, () =>
-          this.showSequential(levelMsgs, () => this.exitBattle()));
+          this.showSequential([...levelMsgs, ...spoils], () => this.exitBattle()));
       });
     });
   }

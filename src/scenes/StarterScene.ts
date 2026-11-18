@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { makeBattleCreature } from "@/data/creatures";
 import type { CreatureType } from "@/types";
 import { TYPE_LABELS } from "@/data/typeLabels";
-import { getInventory, setParty } from "@/systems/playerState";
+import { getInventory, setParty, equipItem } from "@/systems/playerState";
 
 const TYPE_COLORS: Record<CreatureType, string> = {
   grass:    "#4cbb5c", poison:   "#8040c0", fire:     "#e84a35",
@@ -18,6 +18,7 @@ interface StarterDef {
   name: string;
   types: CreatureType[];
   desc: string;
+  weapon: string;
 }
 
 const STARTERS: StarterDef[] = [
@@ -25,18 +26,21 @@ const STARTERS: StarterDef[] = [
     speciesId: 1,
     name:  "Ranger",
     types: ["grass", "poison"],
+    weapon: "short_bow",
     desc:  "A hooded archer of the\nwilds. Poisoned arrows\nand patient aim.",
   },
   {
     speciesId: 4,
     name:  "Mage",
     types: ["fire"],
+    weapon: "oak_staff",
     desc:  "A battle-mage whose\nstaff burns bright.\nFragile but fast.",
   },
   {
     speciesId: 7,
     name:  "Knight",
     types: ["steel"],
+    weapon: "rusty_sword",
     desc:  "Sword and shield, sworn\nto the realm. Slow,\nbut hard to break.",
   },
 ];
@@ -229,8 +233,13 @@ export class StarterScene extends Phaser.Scene {
     this.confirmed = true;
     const starter  = STARTERS[this.selected];
     this.game.registry.set("starterSpeciesId", starter.speciesId);
-    setParty(this.game, [makeBattleCreature(starter.speciesId, 5)]);
-    getInventory(this.game); // seeds the starting inventory on first access
+    const hero = makeBattleCreature(starter.speciesId, 5);
+    const party = [hero];
+    setParty(this.game, party);
+    const inv = getInventory(this.game); // seeds the starting inventory on first access
+    // Starting weapon, taken from a free copy so the normal equip path is used.
+    inv[starter.weapon] = (inv[starter.weapon] ?? 0) + 1;
+    equipItem(this.game, hero, "weapon", starter.weapon);
 
     this.nameText.setText(`You are the ${starter.name}!`).setColor("#ffdd88");
     this.descText.setText("Your legend begins...");

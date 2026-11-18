@@ -1,5 +1,6 @@
 import type { CreatureType } from "@/types";
 import { MOVES } from "@/data/moves";
+import { totalBonus, type EquipLoadout } from "@/data/equipment";
 
 export type { CreatureType };
 
@@ -42,6 +43,8 @@ export interface BattleCreature {
   status: StatusCondition | null;
   catchRate: number;
   exp: number;
+  /** Equipped gear by slot (absent on creatures from older saves = nothing equipped). */
+  equipment?: EquipLoadout;
 }
 
 // ── Species database ──────────────────────────────────────────────────────────
@@ -138,13 +141,46 @@ export function expForLevel(level: number): number {
   return level ** 3;
 }
 
+// ── Stats (level + equipment) ────────────────────────────────────────────────
+
+export interface ComputedStats {
+  maxHp: number; atk: number; def: number; spAtk: number; spDef: number; speed: number;
+}
+
+/** Level-based stats plus any flat bonuses from equipped gear. */
+export function computeStats(speciesId: number, level: number, equipment?: EquipLoadout): ComputedStats {
+  const sp = SPECIES[speciesId];
+  const bonus = totalBonus(equipment);
+  return {
+    maxHp: hpForLevel(sp.baseStats.hp, level) + (bonus.hp ?? 0),
+    atk:   statForLevel(sp.baseStats.atk, level)   + (bonus.atk ?? 0),
+    def:   statForLevel(sp.baseStats.def, level)   + (bonus.def ?? 0),
+    spAtk: statForLevel(sp.baseStats.spAtk, level) + (bonus.spAtk ?? 0),
+    spDef: statForLevel(sp.baseStats.spDef, level) + (bonus.spDef ?? 0),
+    speed: statForLevel(sp.baseStats.speed, level) + (bonus.speed ?? 0),
+  };
+}
+
+/**
+ * Recomputes a creature's stats from its level + equipment. Current HP moves by the
+ * same amount max HP changed (so equipping +HP gear heals that much and removing it
+ * can't leave HP above max), never dropping a living creature below 1.
+ */
+export function refreshStats(c: BattleCreature): void {
+  const s = computeStats(c.speciesId, c.level, c.equipment);
+  const dHp = s.maxHp - c.maxHp;
+  c.maxHp = s.maxHp;
+  c.atk = s.atk; c.def = s.def; c.spAtk = s.spAtk; c.spDef = s.spDef; c.speed = s.speed;
+  c.currentHp = c.currentHp <= 0 ? 0 : Math.min(c.maxHp, Math.max(1, c.currentHp + dHp));
+}
+
 // ── Battle creature factory ───────────────────────────────────────────────────
 
 export function makeBattleCreature(speciesId: number, level: number): BattleCreature {
   const sp = SPECIES[speciesId];
   if (!sp) throw new Error(`Unknown species id: ${speciesId}`);
 
-  const maxHp = hpForLevel(sp.baseStats.hp, level);
+  const stats = computeStats(speciesId, level);
 
   // Last 4 moves the creature would know at this level
   const moveIds = sp.learnset
@@ -164,17 +200,18 @@ export function makeBattleCreature(speciesId: number, level: number): BattleCrea
     name: sp.name,
     level,
     types: sp.types,
-    maxHp,
-    currentHp: maxHp,
-    atk:   statForLevel(sp.baseStats.atk, level),
-    def:   statForLevel(sp.baseStats.def, level),
-    spAtk: statForLevel(sp.baseStats.spAtk, level),
-    spDef: statForLevel(sp.baseStats.spDef, level),
-    speed: statForLevel(sp.baseStats.speed, level),
+    maxHp: stats.maxHp,
+    currentHp: stats.maxHp,
+    atk: stats.atk,
+    def: stats.def,
+    spAtk: stats.spAtk,
+    spDef: stats.spDef,
+    speed: stats.speed,
     moves,
     status: null,
     catchRate: sp.catchRate,
     exp: expForLevel(level),
+    equipment: {},
   };
 }
 
@@ -190,15 +227,8 @@ export function gainExp(creature: BattleCreature, amount: number): string[] {
   const sp = SPECIES[creature.speciesId];
 
   while (creature.level < 100 && creature.exp >= expForLevel(creature.level + 1)) {
-    const oldMaxHp = creature.maxHp;
     creature.level++;
-    creature.maxHp = hpForLevel(sp.baseStats.hp, creature.level);
-    creature.currentHp += creature.maxHp - oldMaxHp;
-    creature.atk   = statForLevel(sp.baseStats.atk, creature.level);
-    creature.def   = statForLevel(sp.baseStats.def, creature.level);
-    creature.spAtk = statForLevel(sp.baseStats.spAtk, creature.level);
-    creature.spDef = statForLevel(sp.baseStats.spDef, creature.level);
-    creature.speed = statForLevel(sp.baseStats.speed, creature.level);
+    refreshStats(creature);
     messages.push(`${creature.name} grew to Lv.${creature.level}!`);
 
     for (const [learnLevel, moveId] of sp.learnset) {

@@ -12,8 +12,8 @@ export const SCRIPTS: Record<string, string[]> = {
     "Stay on marked paths. The tall grass hides wolves,\nbandits and worse for the unprepared.",
   ],
   npc_merchant: [
-    "Welcome, traveller! I stock the finest charms,\ndraughts and gear in the whole kingdom.",
-    "Restocking today, I'm afraid. Come back tomorrow\nand I'll have plenty of draughts and Taming Charms!",
+    "Welcome, traveller! Blades, bows, charms and\ndraughts - everything a hero needs.",
+    "Monsters carry coin, and sometimes a good\nweapon. Bring me what you find, or buy fresh.",
   ],
 
   // ── Cave NPCs ────────────────────────────────────────────────────────────

@@ -45,6 +45,8 @@ export class WorldScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<Direction, Phaser.Input.Keyboard.Key>;
   private actionKey!: Phaser.Input.Keyboard.Key;
+  private menuKeys: Phaser.Input.Keyboard.Key[] = [];
+  private pendingShop = false;
   private touch!: TouchState;
 
   private tilemap!: Phaser.Tilemaps.Tilemap;
@@ -103,6 +105,8 @@ export class WorldScene extends Phaser.Scene {
       right: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D),
     };
     this.actionKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+    this.menuKeys = [Phaser.Input.Keyboard.KeyCodes.X, Phaser.Input.Keyboard.KeyCodes.M, Phaser.Input.Keyboard.KeyCodes.ESC]
+      .map(code => this.input.keyboard!.addKey(code));
     this.touch = getTouchState(this.game);
 
     // ── Animations ───────────────────────────────────────────────────────────
@@ -121,7 +125,10 @@ export class WorldScene extends Phaser.Scene {
     this.game.events.on("dialogue:done", () => {
       this.dialogueLocked = false;
       this.requireZRelease = true; // won't re-arm until player releases Z
+      if (this.pendingShop) { this.pendingShop = false; this.openMenu("shop"); }
     }, this);
+    // Returning from the menu: don't let the Z/X that closed it trigger an interaction.
+    this.events.on(Phaser.Scenes.Events.RESUME, () => { this.requireZRelease = true; });
 
     this.scene.launch("UIScene");
 
@@ -144,6 +151,13 @@ export class WorldScene extends Phaser.Scene {
 
     const touchInteract = this.touch.actionPressed;
     this.touch.actionPressed = false; // one-shot: consume regardless of whether we act on it
+    const touchMenu = this.touch.menuPressed;
+    this.touch.menuPressed = false;
+
+    if (!this.isMoving && (touchMenu || this.menuKeys.some(k => Phaser.Input.Keyboard.JustDown(k)))) {
+      this.openMenu("pause");
+      return;
+    }
 
     if (!this.requireZRelease && !this.isMoving
         && (Phaser.Input.Keyboard.JustDown(this.actionKey) || touchInteract)) {
@@ -289,6 +303,7 @@ export class WorldScene extends Phaser.Scene {
     // Check NPCs
     const npc = this.currentZone.npcs.find(n => n.tileX === tx && n.tileY === ty);
     if (npc) {
+      if (npc.shop) this.pendingShop = true;
       this.showDialogue(SCRIPTS[npc.scriptId] ?? [`[Missing script: ${npc.scriptId}]`], npc.name);
       return;
     }
@@ -298,6 +313,13 @@ export class WorldScene extends Phaser.Scene {
     if (sign) {
       this.showDialogue(SCRIPTS[sign.scriptId] ?? [`[Missing script: ${sign.scriptId}]`]);
     }
+  }
+
+  /** Pauses the world and opens the pause menu or the merchant's shop (MenuScene resumes both scenes on close). */
+  private openMenu(mode: "pause" | "shop"): void {
+    this.scene.pause("UIScene");
+    this.scene.launch("MenuScene", { mode });
+    this.scene.pause();
   }
 
   private showDialogue(pages: string[], speaker?: string): void {

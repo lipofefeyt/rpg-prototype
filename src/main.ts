@@ -5,6 +5,7 @@ import { StarterScene } from "@/scenes/StarterScene";
 import { WorldScene } from "@/scenes/WorldScene";
 import { BattleScene } from "@/scenes/BattleScene";
 import { UIScene } from "@/scenes/UIScene";
+import { MenuScene } from "@/scenes/MenuScene";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -16,7 +17,7 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   backgroundColor: "#000",
-  scene: [BootScene, PreloadScene, StarterScene, WorldScene, BattleScene, UIScene],
+  scene: [BootScene, PreloadScene, StarterScene, WorldScene, BattleScene, UIScene, MenuScene],
   physics: {
     default: "arcade",
     arcade: { debug: false },
