@@ -8,8 +8,8 @@ export interface ItemDef {
 }
 
 export const ITEMS: Record<string, ItemDef> = {
-  capture_orb: { id: "capture_orb", name: "Capture Orb", kind: "capture" },
-  potion:      { id: "potion",      name: "Potion",      kind: "heal", healAmount: 20 },
+  capture_orb: { id: "capture_orb", name: "Taming Charm", kind: "capture" },
+  potion:      { id: "potion",      name: "Healing Draught",      kind: "heal", healAmount: 20 },
 };
 
 export type Inventory = Record<string, number>;

@@ -3,17 +3,17 @@
 export const SCRIPTS: Record<string, string[]> = {
   // ── Overworld NPCs ──────────────────────────────────────────────────────
   npc_elder: [
-    "Welcome, young traveller, to Crossroads Village!",
+    "Welcome, young hero, to Crossroads Village!",
     "Four paths lead from here.\nThe cave road runs north along the main path...",
-    "Beware — wild creatures lurk in the tall grass.\nStay on the roads when you can.",
+    "Beware — wild beasts and worse lurk in the tall grass.\nStay on the roads when you can.",
   ],
   npc_guard: [
-    "Halt! ...Oh, you're the new adventurer everyone\nhas been talking about.",
-    "Stay on marked paths. The tall grass is dangerous\nfor the unprepared.",
+    "Halt! ...Oh, you're the new adventurer everyone\nhas been talking about. The Captain sends his regards.",
+    "Stay on marked paths. The tall grass hides wolves,\nbandits and worse for the unprepared.",
   ],
   npc_merchant: [
-    "Welcome! I stock the finest supplies in\nthe whole region.",
-    "Restocking today, I'm afraid. Come back tomorrow\nand I'll have plenty of potions and gear!",
+    "Welcome, traveller! I stock the finest charms,\ndraughts and gear in the whole kingdom.",
+    "Restocking today, I'm afraid. Come back tomorrow\nand I'll have plenty of draughts and Taming Charms!",
   ],
 
   // ── Cave NPCs ────────────────────────────────────────────────────────────
@@ -24,8 +24,8 @@ export const SCRIPTS: Record<string, string[]> = {
 
   // ── Seaside Town NPCs ────────────────────────────────────────────────────
   npc_fisherman: [
-    "Mornin'! The water's full of Finflop and\nQuackle today — good signs for a catch.",
-    "Rockling like to hide in the shallows near\nthe tide pools. Worth a look if you're patient.",
+    "Mornin'! The water's full of River Carp and\nMarsh Ducks today — good signs for a catch.",
+    "Stone Golems like to hide in the shallows near\nthe tide pools. Worth a look if you're patient — and armed.",
   ],
   npc_sailor: [
     "Just got back from a run up the coast.\nNothing but open water past the horizon, far as I've seen.",

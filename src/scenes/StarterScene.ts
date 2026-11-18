@@ -1,41 +1,43 @@
 import Phaser from "phaser";
 import { makeBattleCreature } from "@/data/creatures";
+import type { CreatureType } from "@/types";
+import { TYPE_LABELS } from "@/data/typeLabels";
 import { getInventory, setParty } from "@/systems/playerState";
 
-const TYPE_COLORS: Record<string, string> = {
-  Grass:    "#4cbb5c", Poison:   "#8040c0", Fire:     "#e84a35",
-  Water:    "#3b91e0", Normal:   "#a8a090", Electric: "#e0b010",
-  Flying:   "#9090e0", Bug:      "#90b020", Rock:     "#b0a038",
-  Ground:   "#c8a850", Psychic:  "#e05090", Ice:      "#74d0e4",
-  Fighting: "#c04848", Ghost:    "#705898", Dragon:   "#7038f8",
-  Dark:     "#706858", Steel:    "#b8b8d0", Fairy:    "#e8a0c0",
+const TYPE_COLORS: Record<CreatureType, string> = {
+  grass:    "#4cbb5c", poison:   "#8040c0", fire:     "#e84a35",
+  water:    "#3b91e0", normal:   "#a8a090", electric: "#e0b010",
+  flying:   "#9090e0", bug:      "#90b020", rock:     "#b0a038",
+  ground:   "#c8a850", psychic:  "#e05090", ice:      "#74d0e4",
+  fighting: "#c04848", ghost:    "#705898", dragon:   "#7038f8",
+  dark:     "#706858", steel:    "#8a96b8", fairy:    "#e8a0c0",
 };
 
 interface StarterDef {
   speciesId: number;
   name: string;
-  types: string[];
+  types: CreatureType[];
   desc: string;
 }
 
 const STARTERS: StarterDef[] = [
   {
     speciesId: 1,
-    name:  "Budleaf",
-    types: ["Grass", "Poison"],
-    desc:  "A bulb sprouts on\nits back at birth.\nCalm and resilient.",
+    name:  "Ranger",
+    types: ["grass", "poison"],
+    desc:  "A hooded archer of the\nwilds. Poisoned arrows\nand patient aim.",
   },
   {
     speciesId: 4,
-    name:  "Cindertail",
-    types: ["Fire"],
-    desc:  "A small flame burns\nat its tail's tip,\nfueled by its spirit.",
+    name:  "Mage",
+    types: ["fire"],
+    desc:  "A battle-mage whose\nstaff burns bright.\nFragile but fast.",
   },
   {
     speciesId: 7,
-    name:  "Aquashell",
-    types: ["Water"],
-    desc:  "Its hardened shell\ndeflects attacks; it\njets water at speed.",
+    name:  "Knight",
+    types: ["steel"],
+    desc:  "Sword and shield, sworn\nto the realm. Slow,\nbut hard to break.",
   },
 ];
 
@@ -99,12 +101,12 @@ export class StarterScene extends Phaser.Scene {
     for (const x of SPR_X) shadowGfx.fillEllipse(x, 216, 78, 10);
 
     // ── Title ────────────────────────────────────────────────────────────────
-    this.add.text(W / 2, 20, "CHOOSE YOUR STARTER", {
+    this.add.text(W / 2, 20, "CHOOSE YOUR CLASS", {
       fontSize: "13px", color: "#ddeeff",
       fontFamily: "monospace", fontStyle: "bold",
     }).setOrigin(0.5).setDepth(2);
 
-    this.add.text(W / 2, 38, "Your creature companion awaits.", {
+    this.add.text(W / 2, 38, "The realm needs a hero.", {
       fontSize: "9px", color: "#374466", fontFamily: "monospace",
     }).setOrigin(0.5).setDepth(2);
 
@@ -137,7 +139,7 @@ export class StarterScene extends Phaser.Scene {
       this.badges.push(t);
     }
 
-    this.descText = this.add.text(W / 2, 270, "", {
+    this.descText = this.add.text(W / 2, 280, "", {
       fontSize: "9px", color: "#5e6e99",
       fontFamily: "monospace", align: "center",
     }).setOrigin(0.5).setDepth(5);
@@ -210,7 +212,7 @@ export class StarterScene extends Phaser.Scene {
     for (let i = 0; i < 2; i++) {
       if (i < types.length) {
         this.badges[i]
-          .setText(types[i].toUpperCase())
+          .setText(TYPE_LABELS[types[i]].toUpperCase())
           .setBackgroundColor(TYPE_COLORS[types[i]] ?? "#555566")
           .setPosition(bPositions[i], 246)
           .setVisible(true);
@@ -230,8 +232,8 @@ export class StarterScene extends Phaser.Scene {
     setParty(this.game, [makeBattleCreature(starter.speciesId, 5)]);
     getInventory(this.game); // seeds the starting inventory on first access
 
-    this.nameText.setText(`You chose ${starter.name}!`).setColor("#ffdd88");
-    this.descText.setText("Good luck on your adventure!");
+    this.nameText.setText(`You are the ${starter.name}!`).setColor("#ffdd88");
+    this.descText.setText("Your legend begins...");
 
     this.cameras.main.flash(220, 255, 255, 255, true);
     this.time.delayedCall(680, () => {

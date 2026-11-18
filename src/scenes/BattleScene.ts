@@ -13,7 +13,7 @@ const FIELD_H = 178;
 const UI_Y    = FIELD_H;
 const SKY_H   = 108;
 
-const WILD_X = 370, WILD_Y = 148;
+const WILD_X = 370, WILD_Y = 118; // keeps the 64px sprite clear of the player HP panel (top y=126)
 const PLYR_X =  90, PLYR_Y = 170;
 const HP_BAR_W = 155, HP_BAR_H = 6;
 
@@ -160,7 +160,7 @@ export class BattleScene extends Phaser.Scene {
 
     // Action buttons
     this.btnGfx = this.add.graphics();
-    const ACTION_LABELS = ["FIGHT", "BAG", "PARTY", "RUN"];
+    const ACTION_LABELS = ["FIGHT", "PACK", "PARTY", "FLEE"];
     for (let i = 0; i < 4; i++) {
       const r = Math.floor(i / 2), c = i % 2;
       this.btnLabels.push(
@@ -198,8 +198,8 @@ export class BattleScene extends Phaser.Scene {
 
     // Intro
     this.hideActionButtons();
-    this.showMsg(`A wild ${this.wild.name} appeared!`, () =>
-      this.showMsg(`Go! ${this.pc.name}!`, () => this.enterMenu()),
+    this.showMsg(`A wild ${this.wild.name} lunges at you!`, () =>
+      this.showMsg(`Forward, ${this.pc.name}!`, () => this.enterMenu()),
     );
   }
 
@@ -376,7 +376,7 @@ export class BattleScene extends Phaser.Scene {
     this.consumeItem(id);
     this.pc.currentHp = Math.min(this.pc.maxHp, this.pc.currentHp + (item.healAmount ?? 0));
     this.refreshPcHpPanel();
-    this.showMsg(`${this.pc.name} was healed!`, () => this.enterMenu());
+    this.showMsg(`${this.pc.name} drinks the draught and recovers!`, () => this.enterMenu());
   }
 
   private consumeItem(id: string) {
@@ -391,7 +391,7 @@ export class BattleScene extends Phaser.Scene {
   private enterPartySelect(forced: boolean) {
     this.state = forced ? "party-select-forced" : "party-select";
     this.cursor = 0;
-    this.msgText.setText(forced ? "Choose next creature:" : "Switch to which creature?");
+    this.msgText.setText(forced ? "Choose your next fighter:" : "Who will fight?");
     this.hideActionButtons();
     const entries: GridEntry[] = this.party.map((c, i) => ({
       label: c.name,
@@ -404,7 +404,7 @@ export class BattleScene extends Phaser.Scene {
   private choosePartyMember(i: number, forced: boolean) {
     const target = this.party[i];
     if (!target || target.currentHp <= 0 || i === this.activeIndex) {
-      if (!forced) this.showMsg("Can't switch to that creature!", () => { this.state = "party-select"; });
+      if (!forced) this.showMsg("Can't send in that fighter!", () => { this.state = "party-select"; });
       return;
     }
     this.hideGrid();
@@ -414,7 +414,7 @@ export class BattleScene extends Phaser.Scene {
     // Switching (forced or voluntary) always ends the current action and
     // returns to the main menu - a voluntary switch doesn't cost a free
     // enemy attack in this build, a deliberate simplification.
-    this.showMsg(`Go! ${this.pc.name}!`, () => this.enterMenu());
+    this.showMsg(`Forward, ${this.pc.name}!`, () => this.enterMenu());
   }
 
   // ── Turn execution ────────────────────────────────────────────────────────
@@ -567,15 +567,15 @@ export class BattleScene extends Phaser.Scene {
   // ── Fainting ──────────────────────────────────────────────────────────────
 
   private onPcFaint() {
-    this.showMsg(`${this.pc.name} fainted!`, () => {
+    this.showMsg(`${this.pc.name} is knocked out!`, () => {
       const hasReserve = this.party.some((c, i) => i !== this.activeIndex && c.currentHp > 0);
       if (hasReserve) this.enterPartySelect(true);
-      else this.showMsg("You blacked out!", () => this.exitBattle());
+      else this.showMsg("Your party has fallen!", () => this.exitBattle());
     });
   }
 
   private onWildFaint() {
-    this.showMsg(`Wild ${this.wild.name} fainted!`, () => {
+    this.showMsg(`The wild ${this.wild.name} is defeated!`, () => {
       const sp = SPECIES[this.wild.speciesId];
       const expGain = Math.max(1, Math.floor(sp.baseExp * this.wild.level / 7));
       const levelMsgs = gainExp(this.pc, expGain);
@@ -585,7 +585,7 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  // ── Capture Orb ───────────────────────────────────────────────────────────
+  // ── Taming Charm ───────────────────────────────────────────────────────────
 
   private doBallThrow() {
     this.hideActionButtons();
@@ -598,19 +598,19 @@ export class BattleScene extends Phaser.Scene {
       this.showMsg("… *shake* …", () => doShakes(n - 1, cb));
     };
 
-    this.showMsg("You threw a Capture Orb!", () =>
+    this.showMsg("You threw a Taming Charm!", () =>
       doShakes(shakes, () => {
         if (!caught) {
-          this.showMsg(`Oh! ${this.wild.name} broke free!`, () => this.enterMenu());
+          this.showMsg(`${this.wild.name} broke free of the charm!`, () => this.enterMenu());
           return;
         }
         if (this.party.length < MAX_PARTY_SIZE) {
           this.party.push(this.wild);
-          this.showMsg(`${this.wild.name} was caught!`, () => this.exitBattle());
+          this.showMsg(`${this.wild.name} was tamed!`, () => this.exitBattle());
         } else {
           // No storage/PC-box system yet (that's a later milestone) - a catch
           // with a full party is just lost rather than crashing or blocking.
-          this.showMsg(`${this.wild.name} was caught! But your party is full...`, () => this.exitBattle());
+          this.showMsg(`${this.wild.name} was tamed! But your party is full...`, () => this.exitBattle());
         }
       }),
     );
