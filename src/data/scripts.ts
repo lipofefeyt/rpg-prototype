@@ -16,6 +16,11 @@ export const SCRIPTS: Record<string, string[]> = {
     "Monsters carry coin, and sometimes a good\nweapon. Bring me what you find, or buy fresh.",
   ],
 
+  npc_innkeeper: [
+    "Welcome to the Wayfarer's Rest! Hot meals,\nsoft beds, and no questions about the mud.",
+    "A night's sleep will patch up you and your\ncompanions - bruises, poisons and all.",
+  ],
+
   // ── Cave NPCs ────────────────────────────────────────────────────────────
   npc_miner: [
     "You made it inside! I've been mapping these\ntunnels for three years now.",
@@ -38,9 +43,17 @@ export const SCRIPTS: Record<string, string[]> = {
     "Someday I'll chart what's out there properly.\nFor now, Seaside Town suits me fine.",
   ],
 
+  npc_innkeeper2: [
+    "Evening, traveller. The sea air does wonders\nfor weary bones.",
+    "Take a bed and I'll have your whole party\nback on their feet by morning.",
+  ],
+
   // ── Signs ────────────────────────────────────────────────────────────────
   sign_crossroads: [
     "── CROSSROADS ──\n↑ Cave Road    ↓ Seaside Town\n← Deep Forest  → Eastern Plains",
+  ],
+  sign_inn: [
+    "THE WAYFARER'S REST\nBeds & hot meals - rest heals your whole party.",
   ],
   sign_cave_entrance: [
     "LIMESTONE CAVERN\nDepth: unknown\n\nEnter at your own risk.",

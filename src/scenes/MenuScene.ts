@@ -6,7 +6,7 @@ import {
 import { ITEMS } from "@/data/items";
 import { computeStats, type BattleCreature, type ComputedStats } from "@/data/creatures";
 import {
-  addGold, addToInventory, equipItem, getGold, getInventory, getParty, setInventory,
+  addGold, addToInventory, equipItem, getGold, getInventory, getParty, healParty, innCost, partyNeedsRest, setInventory,
 } from "@/systems/playerState";
 import { autosave } from "@/systems/saveLoad";
 import { QUESTS, QUEST_ORDER } from "@/data/quests";
@@ -35,7 +35,7 @@ interface Screen {
 }
 interface Frame { make: () => Screen; cursor: number; scroll: number }
 
-export interface MenuInit { mode: "pause" | "shop" }
+export interface MenuInit { mode: "pause" | "shop" | "inn" }
 
 const STAT_ROWS: [string, keyof ComputedStats][] = [
   ["HP", "maxHp"], ["ATK", "atk"], ["DEF", "def"], ["SPA", "spAtk"], ["SPD", "spDef"], ["SPE", "speed"],
@@ -46,6 +46,7 @@ export class MenuScene extends Phaser.Scene {
   private stack: Frame[] = [];
   private flash = "";
   private readyAt = 0;
+  private busy = false; // true during the rest fade: ignore all input
 
   private gfx!: Phaser.GameObjects.Graphics;
   private titleText!: Phaser.GameObjects.Text;
@@ -67,6 +68,7 @@ export class MenuScene extends Phaser.Scene {
   create() {
     this.stack = [];
     this.flash = "";
+    this.busy = false;
     this.labels = []; this.subs = []; this.zones = []; this.zoneRow = [];
     this.readyAt = this.time.now + 220; // ignore the key press that opened us
 
@@ -117,12 +119,13 @@ export class MenuScene extends Phaser.Scene {
       back: kb.addKey(KC.X), esc: kb.addKey(KC.ESC), m: kb.addKey(KC.M),
     };
 
-    this.stack.push({ make: this.mode === "shop" ? () => this.shopRoot() : () => this.pauseRoot(), cursor: 0, scroll: 0 });
+    const root = this.mode === "shop" ? () => this.shopRoot() : this.mode === "inn" ? () => this.innRoot() : () => this.pauseRoot();
+    this.stack.push({ make: root, cursor: 0, scroll: 0 });
     this.render();
   }
 
   update() {
-    if (this.time.now < this.readyAt) return;
+    if (this.busy || this.time.now < this.readyAt) return;
     const JD = Phaser.Input.Keyboard.JustDown;
     if (JD(this.keys.up)) this.move(-1);
     else if (JD(this.keys.down)) this.move(1);
@@ -141,6 +144,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private back() {
+    if (this.busy) return;
     if (this.stack.length <= 1) { this.close(); return; }
     this.flash = "";
     this.stack.pop();
@@ -148,6 +152,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private move(dy: number) {
+    if (this.busy) return;
     const f = this.top();
     const n = f.make().rows.length;
     if (n === 0) return;
@@ -156,6 +161,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private activate() {
+    if (this.busy) return;
     const row = this.top().make().rows[this.top().cursor];
     if (!row || row.enabled === false || !row.act) return;
     row.act();
@@ -400,6 +406,50 @@ export class MenuScene extends Phaser.Scene {
       })),
       info: (i) => (party[i] ? this.statLines(party[i]) : []),
     };
+  }
+
+  // ── Inn ─────────────────────────────────────────────────────────────────────
+
+  private innRoot(): Screen {
+    const cost = innCost(this.game);
+    const gold = getGold(this.game);
+    const needs = partyNeedsRest(this.game);
+    const party = this.party();
+    return {
+      title: "INN — The Wayfarer's Rest",
+      rows: [
+        {
+          label: "Rest", sub: needs ? `${cost}g` : "all rested",
+          enabled: needs && gold >= cost,
+          act: () => this.rest(cost),
+        },
+        { label: "Leave", act: () => this.close() },
+      ],
+      info: (i) => {
+        if (i === 1) return ["Safe travels."];
+        const lines = party.map(c => `${c.name.padEnd(12).slice(0, 12)} ${c.currentHp}/${c.maxHp}`);
+        const note = !needs ? "Everyone is already rested."
+          : gold < cost ? `You need ${cost} gold for a room.`
+          : `A room costs ${cost} gold. You'll wake at dawn, fully healed.`;
+        return [...lines, "", note];
+      },
+    };
+  }
+
+  /** Pay, fade to black, heal everyone, jump the clock to morning, fade back in. */
+  private rest(cost: number) {
+    this.busy = true;
+    const cam = this.cameras.main;
+    cam.fadeOut(450, 0, 0, 0);
+    cam.once("camerafadeoutcomplete", () => {
+      addGold(this.game, -cost);
+      healParty(this.game);
+      (this.scene.get("WorldScene") as WorldScene).advanceToMorning();
+      this.flash = "You sleep soundly and wake at dawn. Everyone is fully healed.";
+      this.render();
+      cam.fadeIn(450, 0, 0, 0);
+      cam.once("camerafadeincomplete", () => { this.busy = false; });
+    });
   }
 
   // ── Shop ────────────────────────────────────────────────────────────────────

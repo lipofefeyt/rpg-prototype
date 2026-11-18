@@ -100,13 +100,28 @@ export function setFlag(game: Phaser.Game, key: string): void {
   setFlags(game, f);
 }
 
-/** Party wipe: everyone is healed and cured, at the cost of a quarter of the gold. Returns gold lost. */
-export function blackout(game: Phaser.Game): number {
+/** Fully restores every party member (HP, status, PP), including fainted ones. */
+export function healParty(game: Phaser.Game): void {
   for (const c of getParty(game)) {
     c.currentHp = c.maxHp;
     c.status = null;
     for (const m of c.moves) m.pp = m.maxPp;
   }
+}
+
+/** True if anyone is hurt, afflicted, or low on PP (so a rest would do something). */
+export function partyNeedsRest(game: Phaser.Game): boolean {
+  return getParty(game).some(c => c.currentHp < c.maxHp || c.status !== null || c.moves.some(m => m.pp < m.maxPp));
+}
+
+/** Inn price: a base fee plus a little per extra party member. */
+export function innCost(game: Phaser.Game): number {
+  return 10 + 5 * Math.max(0, getParty(game).length - 1);
+}
+
+/** Party wipe: everyone is healed and cured, at the cost of a quarter of the gold. Returns gold lost. */
+export function blackout(game: Phaser.Game): number {
+  healParty(game);
   const lost = Math.floor(getGold(game) * 0.25);
   addGold(game, -lost);
   return lost;

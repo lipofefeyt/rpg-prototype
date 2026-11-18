@@ -23,6 +23,8 @@ export interface NpcDef {
   questIds?: string[];
   /** Boss id (data/bosses.ts): interacting starts the boss fight until it is defeated. */
   boss?: string;
+  /** If true, the dialogue is followed by the inn screen (rest to heal for gold). */
+  inn?: boolean;
 }
 
 export interface SignDef {
@@ -188,10 +190,12 @@ export const ZONES: Record<string, ZoneDef> = {
     npcs: [
       { id: "elder",    name: "Elder Oak",     tileX: 23, tileY: 18, facing: "right", scriptId: "npc_elder",    tint: 0xffddaa, questIds: ["rats", "scout_cave"] },
       { id: "guard",    name: "Guard",         tileX: 27, tileY: 21, facing: "left",  scriptId: "npc_guard",    tint: 0xaabbff, questIds: ["crows"] },
+      { id: "innkeeper", name: "Innkeeper Mara", tileX: 27, tileY: 17, facing: "down", scriptId: "npc_innkeeper", tint: 0xffb0b0, inn: true },
       { id: "merchant", name: "Merchant",      tileX: 23, tileY: 23, facing: "right", scriptId: "npc_merchant", tint: 0xaaffbb, shop: true, questIds: ["imps"] },
     ],
     signs: [
       { tileX: 24, tileY: 19, scriptId: "sign_crossroads" },
+      { tileX: 28, tileY: 17, scriptId: "sign_inn" },
       { tileX: PATH_COL, tileY: 3, scriptId: "sign_cave_entrance" },
       { tileX: PATH_COL, tileY: MAP_ROWS - 4, scriptId: "sign_seaside_road" },
     ],
@@ -239,6 +243,7 @@ export const ZONES: Record<string, ZoneDef> = {
     defaultSpawnX: SEASIDE_PATH_COL,
     defaultSpawnY: 2,
     npcs: [
+      { id: "innkeeper2", name: "Innkeeper Bram", tileX: SEASIDE_PATH_COL + 4, tileY: 5, facing: "left", scriptId: "npc_innkeeper2", tint: 0xb0d0ff, inn: true },
       { id: "fisherman", name: "Fisherman Tam", tileX: SEASIDE_PATH_COL - 3, tileY: 8,  facing: "right", scriptId: "npc_fisherman", tint: 0xaaccee, questIds: ["carp"] },
       { id: "sailor",    name: "Sailor Reyes",  tileX: SEASIDE_PATH_COL + 3, tileY: 12, facing: "left",  scriptId: "npc_sailor",    tint: 0xeecc88, questIds: ["tame_first"] },
     ],

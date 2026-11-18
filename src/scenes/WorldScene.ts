@@ -51,7 +51,7 @@ export class WorldScene extends Phaser.Scene {
   private wasd!: Record<Direction, Phaser.Input.Keyboard.Key>;
   private actionKey!: Phaser.Input.Keyboard.Key;
   private menuKeys: Phaser.Input.Keyboard.Key[] = [];
-  private pendingShop = false;
+  private pendingMenu: "shop" | "inn" | null = null;
   private questMarkers: Phaser.GameObjects.Text[] = [];
   private pendingBoss: string | null = null;
   private touch!: TouchState;
@@ -135,7 +135,7 @@ export class WorldScene extends Phaser.Scene {
       this.requireZRelease = true; // won't re-arm until player releases Z
       this.refreshQuestMarkers();
       if (this.pendingBoss) { const id = this.pendingBoss; this.pendingBoss = null; this.startBossBattle(id); return; }
-      if (this.pendingShop) { this.pendingShop = false; this.openMenu("shop"); }
+      if (this.pendingMenu) { const mode = this.pendingMenu; this.pendingMenu = null; this.openMenu(mode); }
     }, this);
     // Returning from the menu: don't let the Z/X that closed it trigger an interaction.
     this.events.on(Phaser.Scenes.Events.RESUME, () => { this.requireZRelease = true; this.refreshQuestMarkers(); this.refreshBosses(); });
@@ -373,7 +373,8 @@ export class WorldScene extends Phaser.Scene {
         this.showDialogue(pages, npc.name);
         return;
       }
-      if (npc.shop) this.pendingShop = true;
+      if (npc.shop) this.pendingMenu = "shop";
+      if (npc.inn) this.pendingMenu = "inn";
       this.showDialogue(SCRIPTS[npc.scriptId] ?? [`[Missing script: ${npc.scriptId}]`], npc.name);
       return;
     }
@@ -385,17 +386,17 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  /** "!" over givers with a new quest, "?" over givers waiting for a turn-in. */
+  /** "!" over givers with a new quest, "?" over givers waiting for a turn-in, "INN" over innkeepers. */
   private refreshQuestMarkers(): void {
     for (const m of this.questMarkers) m.destroy();
     this.questMarkers = [];
     this.currentZone.npcs.forEach((def, i) => {
       const spr = this.activeNpcs[i];
-      const mark = markerFor(this.game, def.questIds);
+      const mark = markerFor(this.game, def.questIds) ?? (def.inn ? "INN" : null);
       if (!spr || !mark) return;
       const t = this.add.text(spr.x, spr.y - 14, mark, {
-        fontSize: "11px", fontFamily: "monospace", fontStyle: "bold",
-        color: mark === "!" ? "#ffdd44" : "#66ddff", stroke: "#000000", strokeThickness: 3,
+        fontSize: mark === "INN" ? "8px" : "11px", fontFamily: "monospace", fontStyle: "bold",
+        color: mark === "!" ? "#ffdd44" : mark === "?" ? "#66ddff" : "#ffaa77", stroke: "#000000", strokeThickness: 3,
       }).setOrigin(0.5).setDepth(4);
       this.tweens.add({ targets: t, y: t.y - 3, duration: 500, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
       this.questMarkers.push(t);
@@ -403,7 +404,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** Pauses the world and opens the pause menu or the merchant's shop (MenuScene resumes both scenes on close). */
-  private openMenu(mode: "pause" | "shop"): void {
+  private openMenu(mode: "pause" | "shop" | "inn"): void {
     this.scene.pause("UIScene");
     this.scene.launch("MenuScene", { mode });
     this.scene.pause();
@@ -445,6 +446,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ── Day/night ─────────────────────────────────────────────────────────────
+
+  /** Resting at an inn: skip ahead to morning. */
+  advanceToMorning(): void {
+    this.gameHour = 8;
+    this.clockAccMs = 0;
+    this.updateDayNight(0);
+  }
 
   private updateDayNight(delta: number): void {
     this.clockAccMs += delta;
