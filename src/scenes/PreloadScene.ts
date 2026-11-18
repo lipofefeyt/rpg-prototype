@@ -12,7 +12,7 @@ export class PreloadScene extends Phaser.Scene {
     // ── Loading screen ───────────────────────────────────────────────────────
     this.add.rectangle(W / 2, H / 2, W, H, 0x0d0d1a);
 
-    this.add.text(W / 2, H / 2 - 40, "RPG PROTOTYPE", {
+    this.add.text(W / 2, H / 2 - 40, "MONSTERMASTER", {
       fontSize: "16px",
       color: "#aaccff",
       fontFamily: "monospace",
