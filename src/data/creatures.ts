@@ -59,7 +59,7 @@ export const SPECIES: Record<number, CreatureSpecies> = {
   },
   4: {
     id: 4, name: "Mage", types: ["fire"],
-    baseStats: { hp: 39, atk: 52, def: 43, spAtk: 60, spDef: 50, speed: 65 },
+    baseStats: { hp: 39, atk: 52, def: 48, spAtk: 60, spDef: 50, speed: 65 },
     catchRate: 45, baseExp: 62,
     learnset: [[1,"scratch"],[1,"growl"],[3,"ember"],[9,"scorch"],[17,"flamethrower"]],
   },

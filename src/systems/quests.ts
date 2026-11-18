@@ -1,6 +1,6 @@
 import type Phaser from "phaser";
 import { QUESTS, targetCount, type QuestDef } from "@/data/quests";
-import { EQUIPMENT } from "@/data/equipment";
+import { EQUIPMENT, classOf } from "@/data/equipment";
 import { ITEMS } from "@/data/items";
 import { addGold, addToInventory } from "@/systems/playerState";
 
@@ -31,9 +31,18 @@ export function progressText(game: Phaser.Game, q: QuestDef): string {
   return `${q.objective.label}: ${Math.min(st?.progress ?? 0, targetCount(q))}/${targetCount(q)}`;
 }
 
-export function rewardText(q: QuestDef): string {
+/** Reward items for this player: fixed items plus the gear matching their hero class. */
+export function rewardItems(game: Phaser.Game, q: QuestDef): Record<string, number> {
+  const items = { ...q.reward.items };
+  const cls = classOf((game.registry.get("starterSpeciesId") as number | undefined) ?? 4);
+  const byClass = cls !== "beast" ? q.reward.classItems?.[cls] : undefined;
+  if (byClass) items[byClass] = (items[byClass] ?? 0) + 1;
+  return items;
+}
+
+export function rewardText(game: Phaser.Game, q: QuestDef): string {
   const parts = [`${q.reward.gold} gold`];
-  for (const [id, n] of Object.entries(q.reward.items ?? {})) {
+  for (const [id, n] of Object.entries(rewardItems(game, q))) {
     parts.push(`${n > 1 ? `${n}x ` : ""}${EQUIPMENT[id]?.name ?? ITEMS[id]?.name ?? id}`);
   }
   return parts.join(", ");
@@ -53,8 +62,8 @@ export function turnInQuest(game: Phaser.Game, id: string): string {
   log[id].status = "done";
   setQuestLog(game, log);
   addGold(game, q.reward.gold);
-  for (const [item, n] of Object.entries(q.reward.items ?? {})) addToInventory(game, item, n);
-  return `Quest complete: ${q.title}\nReceived ${rewardText(q)}.`;
+  for (const [item, n] of Object.entries(rewardItems(game, q))) addToInventory(game, item, n);
+  return `Quest complete: ${q.title}\nReceived ${rewardText(game, q)}.`;
 }
 
 /** What an NPC with these quest ids has to say right now (ready > active > offer). */

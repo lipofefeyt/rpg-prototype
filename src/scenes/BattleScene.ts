@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { anchor, playEntrance, playSendIn, playAttack, playBuff, playHit, playFaint, playTamed, playWobble } from "@/gfx/spriteAnim";
 import { recordBoss, recordDefeat, recordTame } from "@/systems/quests";
 import { BOSSES, bossFlag, type BossDef } from "@/data/bosses";
-import { EQUIPMENT, goldReward, rollGearDrop } from "@/data/equipment";
+import { EQUIPMENT, canEquip, classOf, goldReward, rollGearDrop } from "@/data/equipment";
 import { makeBoss, makeBattleCreature, gainExp, SPECIES, type BattleCreature, type StatusCondition } from "@/data/creatures";
 import { MOVES, type MoveDef } from "@/data/moves";
 import { getTotalEffect } from "@/data/typeChart";
@@ -630,13 +630,21 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  private partyCanUse(gearId: string): boolean {
+    const def = EQUIPMENT[gearId];
+    return !!def && this.party.some(c => canEquip(classOf(c.speciesId), def));
+  }
+
   private onBossFaint(boss: BossDef) {
     playFaint(this, this.wildSprite, () => {
       this.showMsg(boss.defeatMsg, () => {
         const levelMsgs = gainExp(this.pc, boss.rewardExp);
         this.refreshPcHpPanel();
         addGold(this.game, boss.rewardGold);
-        const gear = boss.rewardGear[Math.floor(Math.random() * boss.rewardGear.length)];
+        // Prefer a piece someone in the party can actually use.
+        const usable = boss.rewardGear.filter(id => this.partyCanUse(id));
+        const pool = usable.length ? usable : boss.rewardGear;
+        const gear = pool[Math.floor(Math.random() * pool.length)];
         addToInventory(this.game, gear);
         setFlag(this.game, bossFlag(boss.id));
         const questMsgs = recordBoss(this.game, boss.id);
@@ -662,7 +670,7 @@ export class BattleScene extends Phaser.Scene {
         const gold = goldReward(this.wild.level);
         addGold(this.game, gold);
         const spoils = [`Found ${gold} gold!`];
-        const drop = rollGearDrop(this.wild.level);
+        const drop = rollGearDrop(this.wild.level, def => this.party.some(c => canEquip(classOf(c.speciesId), def)));
         if (drop) {
           addToInventory(this.game, drop);
           spoils.push(`The ${this.wild.name} dropped ${EQUIPMENT[drop].name}!`);

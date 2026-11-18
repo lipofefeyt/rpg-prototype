@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import {
-  EQUIPMENT, EQUIP_SLOTS, SLOT_LABELS, describeBonus, sellPrice,
+  EQUIPMENT, EQUIP_SLOTS, SLOT_LABELS, canEquip, classOf, describeBonus, sellPrice, slotOpenTo, usableText,
   type EquipLoadout, type EquipSlot,
 } from "@/data/equipment";
 import { ITEMS } from "@/data/items";
@@ -296,7 +296,7 @@ export class MenuScene extends Phaser.Scene {
         const st = log[q.id].status;
         return [
           q.title, "", q.summary, "", progressText(this.game, q), "",
-          `Reward: ${rewardText(q)}`,
+          `Reward: ${rewardText(this.game, q)}`,
           st === "ready" ? `Return to ${q.giverName}.` : st === "done" ? "Completed." : `Giver: ${q.giverName}`,
         ];
       },
@@ -320,15 +320,22 @@ export class MenuScene extends Phaser.Scene {
     const c = this.party()[idx];
     return {
       title: `${c?.name ?? "?"} — Gear`,
-      rows: EQUIP_SLOTS.map(slot => ({
-        label: SLOT_LABELS[slot],
-        sub: this.gearName(c?.equipment?.[slot]),
-        act: () => this.push(() => this.gearList(idx, slot)),
-      })),
+      rows: EQUIP_SLOTS.map(slot => {
+        const open = !c || slotOpenTo(classOf(c.speciesId), slot);
+        return {
+          label: SLOT_LABELS[slot],
+          sub: open ? this.gearName(c?.equipment?.[slot]) : "heroes only",
+          enabled: open,
+          act: () => this.push(() => this.gearList(idx, slot)),
+        };
+      }),
       info: (i) => {
         if (!c) return [];
-        const id = i >= 0 ? c.equipment?.[EQUIP_SLOTS[i]] : undefined;
-        return [...this.statLines(c), "", id ? `${EQUIPMENT[id].name}: ${describeBonus(EQUIPMENT[id].bonus)}` : "Nothing equipped."];
+        const slot = EQUIP_SLOTS[i];
+        const id = i >= 0 ? c.equipment?.[slot] : undefined;
+        const note = slot && !slotOpenTo(classOf(c.speciesId), slot) ? "Beasts can only wear trinkets."
+          : id ? `${EQUIPMENT[id].name}: ${describeBonus(EQUIPMENT[id].bonus)}` : "Nothing equipped.";
+        return [...this.statLines(c), "", note];
       },
     };
   }
@@ -337,7 +344,9 @@ export class MenuScene extends Phaser.Scene {
     const c = this.party()[idx];
     const inv = getInventory(this.game);
     const equipped = c?.equipment?.[slot];
-    const ids = this.ownedGear(slot);
+    const cls = c ? classOf(c.speciesId) : "beast";
+    const ids = this.ownedGear(slot).filter(id => canEquip(cls, EQUIPMENT[id]));
+    const hidden = this.ownedGear(slot).length - ids.length; // spare gear this fighter can't use
 
     const rows: Row[] = [];
     const actions: (() => EquipLoadout)[] = []; // hypothetical loadout per row, for the info panel
@@ -355,12 +364,18 @@ export class MenuScene extends Phaser.Scene {
       });
       actions.push(() => ({ ...c.equipment, [slot]: id }));
     }
-    if (!rows.length) rows.push({ label: "(no spare gear)", sub: SLOT_LABELS[slot], enabled: false });
+    if (!rows.length) rows.push({ label: "(no usable gear)", sub: SLOT_LABELS[slot], enabled: false });
 
     return {
       title: `${c?.name ?? "?"} — ${SLOT_LABELS[slot]}`,
       rows,
-      info: (i) => (c && actions[i] ? this.statLines(c, actions[i]()) : ["Win fights or visit the merchant to find more gear."]),
+      info: (i) => {
+        if (c && actions[i]) return this.statLines(c, actions[i]());
+        return [
+          "Win fights or visit the merchant to find more gear.",
+          ...(hidden > 0 ? ["", `${hidden} spare piece${hidden > 1 ? "s" : ""} in your pack can't be used by ${c?.name ?? "this fighter"}.`] : []),
+        ];
+      },
     };
   }
 
@@ -379,7 +394,7 @@ export class MenuScene extends Phaser.Scene {
     }
     for (const id of this.ownedGear()) {
       rows.push({ label: EQUIPMENT[id].name, sub: `x${inv[id]}  ${SLOT_LABELS[EQUIPMENT[id].slot]}`, enabled: false });
-      info.push([`${EQUIPMENT[id].name}`, describeBonus(EQUIPMENT[id].bonus), "", "Equip it from the Equipment menu."]);
+      info.push([`${EQUIPMENT[id].name}`, describeBonus(EQUIPMENT[id].bonus), `Usable by: ${usableText(EQUIPMENT[id])}`, "", "Equip it from the Equipment menu."]);
     }
     if (!rows.length) { rows.push({ label: "(empty)", enabled: false }); info.push(["Your pack is empty."]); }
     return { title: "PACK", rows, info: (i) => info[i] ?? [] };
@@ -472,7 +487,9 @@ export class MenuScene extends Phaser.Scene {
     const goods: Good[] = [
       ...Object.values(ITEMS).map(it => ({ id: it.id, name: it.name, price: it.price, info: [it.desc] })),
       ...Object.values(EQUIPMENT).filter(e => e.inShop).map(e => ({
-        id: e.id, name: e.name, price: e.price, info: [SLOT_LABELS[e.slot], describeBonus(e.bonus)],
+        id: e.id, name: e.name, price: e.price,
+        info: [SLOT_LABELS[e.slot], describeBonus(e.bonus), `Usable by: ${usableText(e)}`,
+          this.party().some(c => canEquip(classOf(c.speciesId), e)) ? "Someone in your party can use it." : "Nobody in your party can use it."],
       })),
     ];
     const inv = getInventory(this.game);
@@ -507,7 +524,9 @@ export class MenuScene extends Phaser.Scene {
     return {
       title: "MERCHANT — Sell",
       rows,
-      info: (i) => (ids[i] ? [EQUIPMENT[ids[i]].name, describeBonus(EQUIPMENT[ids[i]].bonus), "", "Equipped gear can't be sold - unequip it first."] : ["Only spare gear can be sold."]),
+      info: (i) => (ids[i]
+        ? [EQUIPMENT[ids[i]].name, describeBonus(EQUIPMENT[ids[i]].bonus), `Usable by: ${usableText(EQUIPMENT[ids[i]])}`, "", "Equipped gear can't be sold - unequip it first."]
+        : ["Only spare gear can be sold."]),
     };
   }
 }

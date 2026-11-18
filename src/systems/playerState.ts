@@ -1,6 +1,6 @@
 import type Phaser from "phaser";
 import { refreshStats, type BattleCreature } from "@/data/creatures";
-import type { EquipSlot } from "@/data/equipment";
+import { EQUIPMENT, canEquip, classOf, type EquipSlot } from "@/data/equipment";
 import { starterInventory, type Inventory } from "@/data/items";
 
 /**
@@ -58,11 +58,12 @@ export function addToInventory(game: Phaser.Game, id: string, count = 1): void {
 /**
  * Equips [itemId] (or unequips, when null) in [slot] of [creature]. The gear comes from
  * the shared inventory and any piece it replaces goes back into it. Returns false
- * (changing nothing) if the player doesn't own the item.
+ * (changing nothing) if the player doesn't own the item or the creature's class can't use it.
  */
 export function equipItem(game: Phaser.Game, creature: BattleCreature, slot: EquipSlot, itemId: string | null): boolean {
   const inv = getInventory(game);
   if (itemId && (inv[itemId] ?? 0) <= 0) return false;
+  if (itemId && !(EQUIPMENT[itemId] && EQUIPMENT[itemId].slot === slot && canEquip(classOf(creature.speciesId), EQUIPMENT[itemId]))) return false;
 
   const current = creature.equipment?.[slot];
   if (itemId) inv[itemId]--;

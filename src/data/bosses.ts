@@ -17,7 +17,7 @@ export interface BossDef {
   defeatMsg: string;
   rewardGold: number;
   rewardExp: number;
-  rewardGear: string[];     // one of these is guaranteed on the first win
+  rewardGear: string[];     // one of these is guaranteed on the first win (favouring gear the party can use)
 }
 
 export const BOSSES: Record<string, BossDef> = {
@@ -35,7 +35,7 @@ export const BOSSES: Record<string, BossDef> = {
     defeatMsg: "The Cavern Warden crumbles into rubble. The cavern falls quiet.",
     rewardGold: 200,
     rewardExp: 160,
-    rewardGear: ["runeblade", "dragonscale"],
+    rewardGear: ["runeblade", "dragonscale", "archmage_staff", "archmage_raiment", "windpiercer"],
   },
 };
 

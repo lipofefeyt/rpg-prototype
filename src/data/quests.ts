@@ -12,6 +12,8 @@ export type Objective =
 export interface QuestReward {
   gold: number;
   items?: Record<string, number>; // item or gear ids
+  /** Gear that depends on the player's hero class (so a Mage isn't handed a sword). */
+  classItems?: Partial<Record<"knight" | "mage" | "ranger", string>>;
 }
 
 export interface QuestDef {
@@ -59,11 +61,11 @@ export const QUESTS: Record<string, QuestDef> = Object.fromEntries(([
     id: "scout_cave", title: "Into the Cavern", giverName: "Elder Oak",
     summary: "Scout the Limestone Cavern to the north.",
     objective: { kind: "visit", zoneId: "cave" },
-    reward: { gold: 70, items: { steel_sword: 1 } },
+    reward: { gold: 70, classItems: { knight: "steel_sword", mage: "ember_staff", ranger: "hunters_bow" } },
     requires: "rats",
     offer: ["Now that the grain is safe, I have a bolder\nrequest.", "Lights have been seen in the Limestone\nCavern, north along the main path.\nScout it and report back."],
     active: ["The cavern lies north of the village,\nalong the main road."],
-    ready: ["You've seen it with your own eyes. Good.\nThe miners will want to hear of it.", "This blade belonged to a hero of old.\nMay it serve you better than the dust."],
+    ready: ["You've seen it with your own eyes. Good.\nThe miners will want to hear of it.", "This belonged to a hero of old, like you.\nMay it serve you better than the dust."],
   },
   {
     id: "carp", title: "Carp Season", giverName: "Fisherman Tam",
@@ -87,10 +89,10 @@ export const QUESTS: Record<string, QuestDef> = Object.fromEntries(([
     id: "tame_first", title: "A Loyal Beast", giverName: "Sailor Reyes",
     summary: "Tame any monster with a Taming Charm.",
     objective: { kind: "tame", count: 1, label: "Monsters tamed" },
-    reward: { gold: 100, items: { hunters_bow: 1 } },
+    reward: { gold: 100, classItems: { knight: "chainmail", mage: "warded_cloak", ranger: "chainmail" } },
     offer: ["A good hand at sea trusts the beasts around\nhim. Ever tamed one?", "Weaken a monster, then use a Taming Charm\nfrom your pack. Bring one to heel and I'll\nhelp you out."],
     active: ["Weaken one first - a Taming Charm works\nbest on wounded monsters."],
-    ready: ["There's a bond! You're a true beastmaster.", "This bow has served me well. Use it."],
+    ready: ["There's a bond! You're a true beastmaster.", "This gear has served me well at sea.\nNow it's yours."],
   },
   {
     id: "warden", title: "Heart of the Cavern", giverName: "Miner Cole",
