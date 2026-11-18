@@ -52,6 +52,7 @@ export class WorldScene extends Phaser.Scene {
   private actionKey!: Phaser.Input.Keyboard.Key;
   private menuKeys: Phaser.Input.Keyboard.Key[] = [];
   private pendingMenu: "shop" | "inn" | null = null;
+  private pendingShop = "village";
   private questMarkers: Phaser.GameObjects.Text[] = [];
   private pendingBoss: string | null = null;
   private touch!: TouchState;
@@ -135,7 +136,7 @@ export class WorldScene extends Phaser.Scene {
       this.requireZRelease = true; // won't re-arm until player releases Z
       this.refreshQuestMarkers();
       if (this.pendingBoss) { const id = this.pendingBoss; this.pendingBoss = null; this.startBossBattle(id); return; }
-      if (this.pendingMenu) { const mode = this.pendingMenu; this.pendingMenu = null; this.openMenu(mode); }
+      if (this.pendingMenu) { const mode = this.pendingMenu; this.pendingMenu = null; this.openMenu(mode, this.pendingShop); }
     }, this);
     // Returning from the menu: don't let the Z/X that closed it trigger an interaction.
     this.events.on(Phaser.Scenes.Events.RESUME, () => { this.requireZRelease = true; this.refreshQuestMarkers(); this.refreshBosses(); });
@@ -358,6 +359,9 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     if (npc) {
+      // Shops and inns open after the dialogue - including when the NPC also has a quest to talk about.
+      if (npc.shop) { this.pendingMenu = "shop"; this.pendingShop = npc.shop; }
+      if (npc.inn) this.pendingMenu = "inn";
       const quest = pickNpcQuest(this.game, npc.questIds);
       if (quest) {
         const { kind, def } = quest;
@@ -373,8 +377,6 @@ export class WorldScene extends Phaser.Scene {
         this.showDialogue(pages, npc.name);
         return;
       }
-      if (npc.shop) this.pendingMenu = "shop";
-      if (npc.inn) this.pendingMenu = "inn";
       this.showDialogue(SCRIPTS[npc.scriptId] ?? [`[Missing script: ${npc.scriptId}]`], npc.name);
       return;
     }
@@ -404,9 +406,9 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** Pauses the world and opens the pause menu or the merchant's shop (MenuScene resumes both scenes on close). */
-  private openMenu(mode: "pause" | "shop" | "inn"): void {
+  private openMenu(mode: "pause" | "shop" | "inn", shop?: string): void {
     this.scene.pause("UIScene");
-    this.scene.launch("MenuScene", { mode });
+    this.scene.launch("MenuScene", { mode, shop });
     this.scene.pause();
   }
 

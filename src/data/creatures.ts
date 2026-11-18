@@ -53,21 +53,21 @@ export interface BattleCreature {
 export const SPECIES: Record<number, CreatureSpecies> = {
   1: {
     id: 1, name: "Ranger", types: ["grass", "poison"],
-    baseStats: { hp: 45, atk: 49, def: 49, spAtk: 65, spDef: 65, speed: 45 },
+    baseStats: { hp: 45, atk: 49, def: 56, spAtk: 65, spDef: 65, speed: 45 },
     catchRate: 45, baseExp: 64,
-    learnset: [[1,"tackle"],[1,"growl"],[7,"vine_whip"],[13,"poison_powder"],[22,"razor_leaf"]],
+    learnset: [[1,"tackle"],[1,"growl"],[7,"vine_whip"],[11,"venom_shot"],[13,"poison_powder"],[14,"razor_leaf"],[17,"arrow_volley"]],
   },
   4: {
     id: 4, name: "Mage", types: ["fire"],
     baseStats: { hp: 39, atk: 52, def: 48, spAtk: 60, spDef: 50, speed: 65 },
     catchRate: 45, baseExp: 62,
-    learnset: [[1,"scratch"],[1,"growl"],[3,"ember"],[9,"scorch"],[17,"flamethrower"]],
+    learnset: [[1,"scratch"],[1,"growl"],[3,"ember"],[9,"scorch"],[18,"flamethrower"]],
   },
   7: {
     id: 7, name: "Knight", types: ["steel"],
     baseStats: { hp: 44, atk: 48, def: 65, spAtk: 50, spDef: 64, speed: 43 },
     catchRate: 45, baseExp: 63,
-    learnset: [[1,"tackle"],[1,"tail_whip"],[7,"metal_claw"],[10,"bite"],[19,"body_slam"],[28,"smite"]],
+    learnset: [[1,"tackle"],[1,"tail_whip"],[7,"metal_claw"],[10,"bite"],[12,"body_slam"],[14,"smite"]],
   },
   16: {
     id: 16, name: "Carrion Crow", types: ["normal", "flying"],
@@ -122,6 +122,42 @@ export const SPECIES: Record<number, CreatureSpecies> = {
     baseStats: { hp: 70, atk: 90, def: 70, spAtk: 60, spDef: 60, speed: 40 },
     catchRate: 0, baseExp: 150,
     learnset: [[1,"rock_throw"],[1,"growl"],[5,"bite"],[8,"magnitude"],[10,"rock_slide"]],
+  },
+  201: {
+    id: 201, name: "Briarqueen", types: ["grass", "dark"],
+    baseStats: { hp: 75, atk: 70, def: 75, spAtk: 95, spDef: 85, speed: 55 },
+    catchRate: 0, baseExp: 220,
+    learnset: [[1,"vine_whip"],[1,"poison_powder"],[10,"briar_lash"],[14,"nightshade"]],
+  },
+  202: {
+    id: 202, name: "Warlord Grukk", types: ["dark"],
+    baseStats: { hp: 90, atk: 110, def: 80, spAtk: 40, spDef: 60, speed: 50 },
+    catchRate: 0, baseExp: 300,
+    learnset: [[1,"growl"],[5,"body_slam"],[10,"rock_throw"],[15,"cleave"],[17,"haymaker"]],
+  },
+  210: {
+    id: 210, name: "Dire Wolf", types: ["dark"],
+    baseStats: { hp: 55, atk: 80, def: 50, spAtk: 30, spDef: 40, speed: 85 },
+    catchRate: 120, baseExp: 90,
+    learnset: [[1,"scratch"],[1,"growl"],[6,"bite"],[12,"quick_attack"],[20,"hyper_fang"]],
+  },
+  211: {
+    id: 211, name: "Briar Sprite", types: ["grass"],
+    baseStats: { hp: 40, atk: 30, def: 40, spAtk: 75, spDef: 60, speed: 60 },
+    catchRate: 150, baseExp: 80,
+    learnset: [[1,"vine_whip"],[1,"confusion"],[9,"poison_powder"],[14,"razor_leaf"]],
+  },
+  212: {
+    id: 212, name: "Tusked Boar", types: ["normal"],
+    baseStats: { hp: 70, atk: 85, def: 65, spAtk: 25, spDef: 40, speed: 45 },
+    catchRate: 120, baseExp: 100,
+    learnset: [[1,"tackle"],[1,"growl"],[8,"bite"],[14,"body_slam"],[20,"hyper_fang"]],
+  },
+  213: {
+    id: 213, name: "Dust Hawk", types: ["flying"],
+    baseStats: { hp: 50, atk: 65, def: 45, spAtk: 40, spDef: 45, speed: 80 },
+    catchRate: 130, baseExp: 95,
+    learnset: [[1,"scratch"],[1,"sand_attack"],[8,"gust"],[13,"quick_attack"],[18,"wing_attack"]],
   },
   129: {
     id: 129, name: "River Carp", types: ["water"],

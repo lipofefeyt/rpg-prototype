@@ -25,6 +25,16 @@ export const SEASIDE_COLS     = 26;
 export const SEASIDE_ROWS     = 20;
 export const SEASIDE_PATH_COL = 13; // col index of the zone's vertical path
 
+// Deep Forest (west of the Crossroads) - enter from the east edge, boss at the far west
+export const FOREST_COLS = 34;
+export const FOREST_ROWS = 24;
+export const FOREST_PATH_ROW = 12;
+
+// Eastern Plains (east of the Crossroads) - enter from the west edge, boss at the far east
+export const PLAINS_COLS = 42;
+export const PLAINS_ROWS = 22;
+export const PLAINS_PATH_ROW = 10;
+
 // Player/NPC spritesheet — idle frame base per direction (frame = base + 0/1/2)
 export const ANIM_BASE = { down: 0, up: 3, left: 6, right: 9 } as const;
 

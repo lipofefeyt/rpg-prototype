@@ -48,6 +48,43 @@ export const SCRIPTS: Record<string, string[]> = {
     "Take a bed and I'll have your whole party\nback on their feet by morning.",
   ],
 
+  // ── Deep Forest ─────────────────────────────────────────────────────────
+  npc_hermit: [
+    "The forest is quieter when you listen. Lately it\nhas been... holding its breath.",
+    "Stay on the trail, hero. The Briarqueen's\nthorns reach further every season.",
+  ],
+  boss_briarqueen_intro: [
+    "Brambles knot into the shape of a woman,\ncrowned in thorns and a single red rose...",
+    "\"Trespasser. The forest is mine. Turn back, or\nbe woven into it.\"",
+  ],
+  sign_forest_entrance: [
+    "DEEP FOREST\nThe trail winds west. Beware wolves, brambles -\nand whatever sleeps in the grove.",
+  ],
+
+  // ── Eastern Plains ──────────────────────────────────────────────────────
+  npc_smith: [
+    "Smith Hild's the name. I forge what the road\nbreaks - blades, bows, mail, all of it.",
+    "My stock's a step above the village merchant's.\nCome and look.",
+  ],
+  npc_innkeeper3: [
+    "Welcome to the outpost! Beds are clean and the\nstew is hot.",
+    "Rest up. Grukk's warband won't wait forever.",
+  ],
+  npc_scout: [
+    "I watch the camp from here. Grukk's warband\ngrows bolder every week.",
+    "The plains are wide, but all roads east lead to\nhis axe.",
+  ],
+  boss_grukk_intro: [
+    "A towering warlord looms over a ring of stolen\ncarts, a great axe across his shoulders.",
+    "\"Another little hero wants my head? Come, then.\nGrukk likes a challenge!\"",
+  ],
+  sign_plains_outpost: [
+    "EASTERN OUTPOST\nSmith - Inn - Scout post",
+  ],
+  sign_plains_camp: [
+    "WARCAMP AHEAD\nTurn back unless you want trouble.",
+  ],
+
   // ── Signs ────────────────────────────────────────────────────────────────
   sign_crossroads: [
     "── CROSSROADS ──\n↑ Cave Road    ↓ Seaside Town\n← Deep Forest  → Eastern Plains",

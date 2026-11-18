@@ -29,7 +29,7 @@ export const MOVES: Record<string, MoveDef> = {
   // Fire
   ember:         { id: "ember",         name: "Firebolt",         type: "fire",     category: "special",  power: 40,  accuracy: 100, pp: 25, priority: 0 },
   scorch:        { id: "scorch",        name: "Scorch",        type: "fire",     category: "special",  power: 60,  accuracy: 100, pp: 20, priority: 0 },
-  flamethrower:  { id: "flamethrower",  name: "Inferno",  type: "fire",     category: "special",  power: 95,  accuracy: 100, pp: 15, priority: 0 },
+  flamethrower:  { id: "flamethrower",  name: "Inferno",  type: "fire",     category: "special",  power: 90,  accuracy: 100, pp: 15, priority: 0 },
   // Water
   water_gun:     { id: "water_gun",     name: "Water Jet",     type: "water",    category: "special",  power: 40,  accuracy: 100, pp: 25, priority: 0 },
   bubble:        { id: "bubble",        name: "Foam Burst",        type: "water",    category: "special",  power: 40,  accuracy: 100, pp: 30, priority: 0 },
@@ -41,6 +41,13 @@ export const MOVES: Record<string, MoveDef> = {
   // Grass
   vine_whip:     { id: "vine_whip",     name: "Snaring Shot",     type: "grass",    category: "physical", power: 45,  accuracy: 100, pp: 25, priority: 0 },
   razor_leaf:    { id: "razor_leaf",    name: "Barbed Arrow",    type: "grass",    category: "physical", power: 55,  accuracy: 95,  pp: 25, priority: 0 },
+  // Boss / new-zone moves
+  arrow_volley:  { id: "arrow_volley",  name: "Arrow Volley",  type: "grass",    category: "physical", power: 85,  accuracy: 95,  pp: 15, priority: 0 },
+  nightshade:    { id: "nightshade",    name: "Nightshade",    type: "dark",     category: "special",  power: 75,  accuracy: 100, pp: 15, priority: 0 },
+  venom_shot:    { id: "venom_shot",    name: "Venom Shot",    type: "poison",   category: "physical", power: 65,  accuracy: 100, pp: 20, priority: 0 },
+  briar_lash:    { id: "briar_lash",    name: "Briar Lash",    type: "grass",    category: "special",  power: 75,  accuracy: 95,  pp: 15, priority: 0 },
+  cleave:        { id: "cleave",        name: "Cleave",        type: "normal",   category: "physical", power: 75,  accuracy: 95,  pp: 15, priority: 0 },
+  haymaker:      { id: "haymaker",      name: "Brutal Strike", type: "dark",     category: "physical", power: 80,  accuracy: 85,  pp: 10, priority: 0 },
   // Flying
   gust:          { id: "gust",          name: "Gale",          type: "flying",   category: "special",  power: 40,  accuracy: 100, pp: 35, priority: 0 },
   wing_attack:   { id: "wing_attack",   name: "Talon Rake",   type: "flying",   category: "physical", power: 60,  accuracy: 100, pp: 35, priority: 0 },

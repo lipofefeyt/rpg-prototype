@@ -5,6 +5,8 @@ import {
   MAP_COLS, MAP_ROWS, PATH_ROW, PATH_COL,
   CAVE_COLS, CAVE_ROWS, CAVE_EXIT_COL,
   SEASIDE_COLS, SEASIDE_ROWS, SEASIDE_PATH_COL,
+  FOREST_COLS, FOREST_ROWS, FOREST_PATH_ROW,
+  PLAINS_COLS, PLAINS_ROWS, PLAINS_PATH_ROW,
 } from "@/constants";
 
 // ── Shared interfaces ────────────────────────────────────────────────────────
@@ -17,8 +19,8 @@ export interface NpcDef {
   facing: Direction;
   scriptId: string;
   tint: number;
-  /** If true, the dialogue is followed by the shop screen. */
-  shop?: boolean;
+  /** Which shop opens after the dialogue ("village" | "outpost"; see equipment.ts). */
+  shop?: string;
   /** Quests this NPC gives, checked in order (see systems/quests.ts). */
   questIds?: string[];
   /** Boss id (data/bosses.ts): interacting starts the boss fight until it is defeated. */
@@ -177,6 +179,79 @@ function buildSeaside(): number[][] {
   return m;
 }
 
+
+/** Small deterministic PRNG so the generated maps are identical every run. */
+function rng(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => { a = (a * 1664525 + 1013904223) >>> 0; return a / 4294967296; };
+}
+
+type Grid = number[][];
+const fillRect = (m: Grid, x0: number, y0: number, x1: number, y1: number, tile: number) => {
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (m[y]?.[x] !== undefined) m[y][x] = tile;
+};
+
+/** Lays a 1-tile path through [waypoints] (straight segments) with a cleared grass margin either side. */
+function carvePath(m: Grid, waypoints: [number, number][]): void {
+  const cells: [number, number][] = [];
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const [x0, y0] = waypoints[i], [x1, y1] = waypoints[i + 1];
+    const sx = Math.sign(x1 - x0), sy = Math.sign(y1 - y0);
+    for (let x = x0, y = y0; ; x += sx, y += sy) {
+      cells.push([x, y]);
+      if (x === x1 && y === y1) break;
+    }
+  }
+  for (const [x, y] of cells) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    if (m[y + dy]?.[x + dx] !== undefined && m[y + dy][x + dx] !== P) m[y + dy][x + dx] = G;
+  }
+  for (const [x, y] of cells) m[y][x] = P;
+}
+
+function buildForest(): Grid {
+  const rand = rng(1337);
+  const m: Grid = Array.from({ length: FOREST_ROWS }, () => Array<number>(FOREST_COLS).fill(G));
+  // dense woodland
+  for (let y = 0; y < FOREST_ROWS; y++) for (let x = 0; x < FOREST_COLS; x++) {
+    const border = x === 0 || y === 0 || x === FOREST_COLS - 1 || y === FOREST_ROWS - 1;
+    if (border || rand() < 0.4) m[y][x] = T;
+  }
+  const R = FOREST_PATH_ROW;
+  // a winding trail from the east entrance to the Briarqueen's grove in the far west
+  carvePath(m, [[FOREST_COLS - 2, R], [27, R], [27, 6], [19, 6], [19, 17], [11, 17], [11, R], [7, R]]);
+  // tall-grass clearings along the trail (wild encounters)
+  for (const [x0, y0, x1, y1] of [[28, 13, 32, 17], [21, 8, 25, 12], [12, 4, 17, 9], [13, 18, 17, 21], [20, 18, 26, 21]] as [number, number, number, number][]) {
+    fillRect(m, x0, y0, x1, y1, TG);
+  }
+  // keep the trail and entrance clear, then the boss grove
+  carvePath(m, [[FOREST_COLS - 2, R], [27, R], [27, 6], [19, 6], [19, 17], [11, 17], [11, R], [7, R]]);
+  fillRect(m, 2, R - 3, 8, R + 3, G);
+  // hermit's clearing near the entrance
+  fillRect(m, 28, 8, 31, 10, G);
+  m[R][FOREST_COLS - 2] = P;
+  return m;
+}
+
+function buildPlains(): Grid {
+  const rand = rng(4242);
+  const m: Grid = Array.from({ length: PLAINS_ROWS }, () => Array<number>(PLAINS_COLS).fill(G));
+  for (let y = 0; y < PLAINS_ROWS; y++) for (let x = 0; x < PLAINS_COLS; x++) {
+    const border = x === 0 || y === 0 || x === PLAINS_COLS - 1 || y === PLAINS_ROWS - 1;
+    if (border) m[y][x] = T;
+    else if (rand() < 0.04) m[y][x] = T;      // sparse trees
+  }
+  const R = PLAINS_PATH_ROW;
+  // big tall-grass fields north and south of the road
+  fillRect(m, 14, 2, 31, 6, TG);
+  fillRect(m, 14, 14, 31, 19, TG);
+  fillRect(m, 33, 2, 38, 5, TG);
+  // outpost yard (west) and the Grukk's war camp (east) are cleared grass
+  fillRect(m, 2, R - 4, 13, R + 4, G);
+  fillRect(m, 33, R - 3, 40, R + 3, G);
+  carvePath(m, [[1, R], [PLAINS_COLS - 5, R]]);
+  return m;
+}
+
 // ── Zone registry ─────────────────────────────────────────────────────────────
 
 export const ZONES: Record<string, ZoneDef> = {
@@ -188,10 +263,10 @@ export const ZONES: Record<string, ZoneDef> = {
     defaultSpawnX: PATH_COL,
     defaultSpawnY: PATH_ROW,
     npcs: [
-      { id: "elder",    name: "Elder Oak",     tileX: 23, tileY: 18, facing: "right", scriptId: "npc_elder",    tint: 0xffddaa, questIds: ["rats", "scout_cave"] },
+      { id: "elder",    name: "Elder Oak",     tileX: 23, tileY: 18, facing: "right", scriptId: "npc_elder",    tint: 0xffddaa, questIds: ["rats", "scout_cave", "scout_forest", "scout_plains"] },
       { id: "guard",    name: "Guard",         tileX: 27, tileY: 21, facing: "left",  scriptId: "npc_guard",    tint: 0xaabbff, questIds: ["crows"] },
       { id: "innkeeper", name: "Innkeeper Mara", tileX: 27, tileY: 17, facing: "down", scriptId: "npc_innkeeper", tint: 0xffb0b0, inn: true },
-      { id: "merchant", name: "Merchant",      tileX: 23, tileY: 23, facing: "right", scriptId: "npc_merchant", tint: 0xaaffbb, shop: true, questIds: ["imps"] },
+      { id: "merchant", name: "Merchant",      tileX: 23, tileY: 23, facing: "right", scriptId: "npc_merchant", tint: 0xaaffbb, shop: "village", questIds: ["imps"] },
     ],
     signs: [
       { tileX: 24, tileY: 19, scriptId: "sign_crossroads" },
@@ -202,6 +277,8 @@ export const ZONES: Record<string, ZoneDef> = {
     transitions: [
       { tileX: PATH_COL, tileY: 1, targetZoneId: "cave", spawnX: CAVE_EXIT_COL, spawnY: CAVE_ROWS - 3 },
       { tileX: PATH_COL, tileY: MAP_ROWS - 2, targetZoneId: "seaside", spawnX: SEASIDE_PATH_COL, spawnY: 2 },
+      { tileX: 1, tileY: PATH_ROW, targetZoneId: "forest", spawnX: FOREST_COLS - 3, spawnY: FOREST_PATH_ROW },
+      { tileX: MAP_COLS - 2, tileY: PATH_ROW, targetZoneId: "plains", spawnX: 3, spawnY: PLAINS_PATH_ROW },
     ],
     encounterRate: 0.15,
     encounterPool: [
@@ -259,6 +336,60 @@ export const ZONES: Record<string, ZoneDef> = {
       { speciesId: 54,  minLevel: 6, maxLevel: 9,  weight: 25 }, // Quackle
       { speciesId: 16,  minLevel: 5, maxLevel: 9,  weight: 25 }, // Flitterwing
       { speciesId: 74,  minLevel: 6, maxLevel: 10, weight: 20 }, // Rockling
+    ],
+  },
+  forest: {
+    id: "forest",
+    cols: FOREST_COLS,
+    rows: FOREST_ROWS,
+    mapData: buildForest(),
+    defaultSpawnX: FOREST_COLS - 3,
+    defaultSpawnY: FOREST_PATH_ROW,
+    npcs: [
+      { id: "hermit", name: "Hermit Elm", tileX: 30, tileY: 9, facing: "down", scriptId: "npc_hermit", tint: 0xa8d89a, questIds: ["wolves", "briar"] },
+      { id: "briarqueen", name: "Briarqueen", tileX: 5, tileY: FOREST_PATH_ROW, facing: "right", scriptId: "boss_briarqueen_intro", tint: 0xffffff, boss: "briarqueen" },
+    ],
+    signs: [
+      { tileX: FOREST_COLS - 4, tileY: FOREST_PATH_ROW + 1, scriptId: "sign_forest_entrance" },
+    ],
+    transitions: [
+      { tileX: FOREST_COLS - 2, tileY: FOREST_PATH_ROW, targetZoneId: "overworld", spawnX: 2, spawnY: PATH_ROW },
+    ],
+    encounterRate: 0.18,
+    encounterPool: [
+      { speciesId: 210, minLevel: 7, maxLevel: 11, weight: 30 }, // Dire Wolf
+      { speciesId: 211, minLevel: 7, maxLevel: 10, weight: 30 }, // Briar Sprite
+      { speciesId: 16,  minLevel: 6, maxLevel: 9,  weight: 15 }, // Carrion Crow
+      { speciesId: 92,  minLevel: 8, maxLevel: 11, weight: 10 }, // Wraith
+    ],
+  },
+  plains: {
+    id: "plains",
+    cols: PLAINS_COLS,
+    rows: PLAINS_ROWS,
+    mapData: buildPlains(),
+    defaultSpawnX: 3,
+    defaultSpawnY: PLAINS_PATH_ROW,
+    npcs: [
+      { id: "smith",     name: "Smith Hild",    tileX: 7,  tileY: PLAINS_PATH_ROW - 2, facing: "down", scriptId: "npc_smith",     tint: 0xd0a070, shop: "outpost", questIds: ["hawks"] },
+      { id: "innkeeper3", name: "Innkeeper Odo", tileX: 10, tileY: PLAINS_PATH_ROW + 2, facing: "up",   scriptId: "npc_innkeeper3", tint: 0xb0ffb0, inn: true },
+      { id: "scout",     name: "Scout Alder",   tileX: 12, tileY: PLAINS_PATH_ROW - 2, facing: "down", scriptId: "npc_scout",     tint: 0xc0c0ff, questIds: ["boars", "grukk"] },
+      { id: "grukk",     name: "Warlord Grukk", tileX: 37, tileY: PLAINS_PATH_ROW, facing: "left", scriptId: "boss_grukk_intro", tint: 0xffffff, boss: "warlord_grukk" },
+    ],
+    signs: [
+      { tileX: 5, tileY: PLAINS_PATH_ROW + 1, scriptId: "sign_plains_outpost" },
+      { tileX: 31, tileY: PLAINS_PATH_ROW + 1, scriptId: "sign_plains_camp" },
+    ],
+    transitions: [
+      { tileX: 1, tileY: PLAINS_PATH_ROW, targetZoneId: "overworld", spawnX: MAP_COLS - 3, spawnY: PATH_ROW },
+    ],
+    encounterRate: 0.16,
+    encounterPool: [
+      { speciesId: 212, minLevel: 9,  maxLevel: 13, weight: 30 }, // Tusked Boar
+      { speciesId: 213, minLevel: 9,  maxLevel: 13, weight: 30 }, // Dust Hawk
+      { speciesId: 210, minLevel: 10, maxLevel: 13, weight: 15 }, // Dire Wolf
+      { speciesId: 25,  minLevel: 9,  maxLevel: 12, weight: 15 }, // Spark Imp
+      { speciesId: 74,  minLevel: 10, maxLevel: 13, weight: 10 }, // Stone Golem
     ],
   },
 };

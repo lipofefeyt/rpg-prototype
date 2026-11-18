@@ -35,7 +35,8 @@ export interface EquipDef {
   bonus: StatBonus;
   price: number;      // buy price; sells for half
   tier: 1 | 2 | 3;    // 1 = shop/common drop, 2 = deeper drops, 3 = rare
-  inShop: boolean;
+  /** Which merchant sells it (see MenuScene shops); omitted = not sold. */
+  shop?: "village" | "outpost";
   /** Classes that may equip it; omitted = anyone (including tamed monsters). */
   usableBy?: ClassTag[];
 }
@@ -43,7 +44,7 @@ export interface EquipDef {
 const E = (
   id: string, name: string, slot: EquipSlot, bonus: StatBonus, price: number, tier: 1 | 2 | 3,
   usableBy?: ClassTag[],
-): EquipDef => ({ id, name, slot, bonus, price, tier, inShop: tier === 1, usableBy });
+): EquipDef => ({ id, name, slot, bonus, price, tier, shop: tier === 1 ? "village" : tier === 2 ? "outpost" : undefined, usableBy });
 
 export const EQUIPMENT: Record<string, EquipDef> = Object.fromEntries([
   // Weapons - each hero class has its own line
@@ -54,8 +55,8 @@ export const EQUIPMENT: Record<string, EquipDef> = Object.fromEntries([
   E("ember_staff",    "Ember Staff",     "weapon", { spAtk: 9 },           160, 2, ["mage"]),
   E("archmage_staff", "Archmage Staff",  "weapon", { spAtk: 14, speed: 4 }, 400, 3, ["mage"]),
   E("short_bow",      "Short Bow",       "weapon", { atk: 3, speed: 3 },    55, 1, ["ranger"]),
-  E("hunters_bow",    "Hunter's Bow",    "weapon", { atk: 7, speed: 6 },   170, 2, ["ranger"]),
-  E("windpiercer",    "Windpiercer",     "weapon", { atk: 11, speed: 8 },  400, 3, ["ranger"]),
+  E("hunters_bow",    "Hunter's Bow",    "weapon", { atk: 8, speed: 6 },   170, 2, ["ranger"]),
+  E("windpiercer",    "Windpiercer",     "weapon", { atk: 13, speed: 8 },  400, 3, ["ranger"]),
   // Armor - light fits every hero; mail is for fighters; the best pieces are class-bound
   E("leather_jerkin", "Leather Jerkin",  "armor",  { def: 3, hp: 6 },       45, 1, ALL_HEROES),
   E("padded_robe",    "Padded Robe",     "armor",  { spDef: 3, hp: 5 },     45, 1, ALL_HEROES),
@@ -68,6 +69,8 @@ export const EQUIPMENT: Record<string, EquipDef> = Object.fromEntries([
   E("vigor_amulet",   "Vigor Amulet",    "trinket", { hp: 14 },             60, 1),
   E("warding_ring",   "Warding Ring",    "trinket", { def: 3, spDef: 3 },  150, 2),
   E("hawks_eye",      "Hawk's Eye",      "trinket", { atk: 4, spAtk: 4, speed: 4 }, 320, 3),
+  E("heartwood_pendant","Heartwood Pendant","trinket", { hp: 24, def: 4, spDef: 4 }, 380, 3),
+  E("warlords_crest", "Warlord's Crest", "trinket", { atk: 8, spAtk: 8 }, 380, 3),
 ].map(e => [e.id, e]));
 
 export function canEquip(cls: ClassTag, def: EquipDef): boolean {

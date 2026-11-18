@@ -35,7 +35,7 @@ interface Screen {
 }
 interface Frame { make: () => Screen; cursor: number; scroll: number }
 
-export interface MenuInit { mode: "pause" | "shop" | "inn" }
+export interface MenuInit { mode: "pause" | "shop" | "inn"; shop?: string }
 
 const STAT_ROWS: [string, keyof ComputedStats][] = [
   ["HP", "maxHp"], ["ATK", "atk"], ["DEF", "def"], ["SPA", "spAtk"], ["SPD", "spDef"], ["SPE", "speed"],
@@ -43,6 +43,7 @@ const STAT_ROWS: [string, keyof ComputedStats][] = [
 
 export class MenuScene extends Phaser.Scene {
   private mode: MenuInit["mode"] = "pause";
+  private shopId = "village";
   private stack: Frame[] = [];
   private flash = "";
   private readyAt = 0;
@@ -63,7 +64,7 @@ export class MenuScene extends Phaser.Scene {
 
   constructor() { super({ key: "MenuScene" }); }
 
-  init(data: MenuInit) { this.mode = data?.mode ?? "pause"; }
+  init(data: MenuInit) { this.mode = data?.mode ?? "pause"; this.shopId = data?.shop ?? "village"; }
 
   create() {
     this.stack = [];
@@ -471,7 +472,7 @@ export class MenuScene extends Phaser.Scene {
 
   private shopRoot(): Screen {
     return {
-      title: "MERCHANT",
+      title: this.shopId === "outpost" ? "OUTPOST SMITH" : "MERCHANT",
       rows: [
         { label: "Buy", sub: "supplies & gear", act: () => this.push(() => this.shopBuy()) },
         { label: "Sell", sub: "spare gear for coin", act: () => this.push(() => this.shopSell()) },
@@ -486,7 +487,7 @@ export class MenuScene extends Phaser.Scene {
     interface Good { id: string; name: string; price: number; info: string[] }
     const goods: Good[] = [
       ...Object.values(ITEMS).map(it => ({ id: it.id, name: it.name, price: it.price, info: [it.desc] })),
-      ...Object.values(EQUIPMENT).filter(e => e.inShop).map(e => ({
+      ...Object.values(EQUIPMENT).filter(e => e.shop === this.shopId).map(e => ({
         id: e.id, name: e.name, price: e.price,
         info: [SLOT_LABELS[e.slot], describeBonus(e.bonus), `Usable by: ${usableText(e)}`,
           this.party().some(c => canEquip(classOf(c.speciesId), e)) ? "Someone in your party can use it." : "Nobody in your party can use it."],
@@ -494,7 +495,7 @@ export class MenuScene extends Phaser.Scene {
     ];
     const inv = getInventory(this.game);
     return {
-      title: "MERCHANT — Buy",
+      title: `${this.shopId === "outpost" ? "SMITH" : "MERCHANT"} — Buy`,
       rows: goods.map(gd => ({
         label: gd.name, sub: `${gd.price}g`, enabled: gold >= gd.price,
         act: () => {
@@ -522,7 +523,7 @@ export class MenuScene extends Phaser.Scene {
     }));
     if (!rows.length) rows.push({ label: "(no spare gear)", enabled: false });
     return {
-      title: "MERCHANT — Sell",
+      title: `${this.shopId === "outpost" ? "SMITH" : "MERCHANT"} — Sell`,
       rows,
       info: (i) => (ids[i]
         ? [EQUIPMENT[ids[i]].name, describeBonus(EQUIPMENT[ids[i]].bonus), `Usable by: ${usableText(EQUIPMENT[ids[i]])}`, "", "Equipped gear can't be sold - unequip it first."]

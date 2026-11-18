@@ -25,6 +25,14 @@ const BTN_W = 234, BTN_H = 30;
 const BTN_ROWS = [UI_Y + 66, UI_Y + 100];
 const BTN_COLS = [4, 242];
 
+/** Sky / ground / horizon line / shadow colours per zone. */
+const BATTLE_BACKDROPS: Record<string, { sky: number; ground: number; horizon: number; shadow: number }> = {
+  overworld: { sky: 0x87ceeb, ground: 0x5a8e3a, horizon: 0x3a6a1a, shadow: 0x336633 },
+  cave:      { sky: 0x1c1228, ground: 0x3a2a2a, horizon: 0x2a1a3a, shadow: 0x2a1a2a },
+  forest:    { sky: 0x3d6a4a, ground: 0x2e5a2e, horizon: 0x1e4a1e, shadow: 0x1a3a1a },
+  plains:    { sky: 0xa8d8f0, ground: 0xa89848, horizon: 0x8a7a30, shadow: 0x7a6a28 },
+};
+
 export interface BattleInitData {
   wildSpeciesId: number;
   wildLevel: number;
@@ -133,11 +141,8 @@ export class BattleScene extends Phaser.Scene {
     }
     this.activeIndex = Math.max(0, this.party.findIndex(c => c.currentHp > 0));
 
-    const cave = zoneId === "cave";
-    const skyCol = cave ? 0x1c1228 : 0x87ceeb;
-    const gndCol = cave ? 0x3a2a2a : 0x5a8e3a;
-    const hrzCol = cave ? 0x2a1a3a : 0x3a6a1a;
-    const shdCol = cave ? 0x2a1a2a : 0x336633;
+    const bg = BATTLE_BACKDROPS[zoneId] ?? BATTLE_BACKDROPS.overworld;
+    const { sky: skyCol, ground: gndCol, horizon: hrzCol, shadow: shdCol } = bg;
 
     // Background
     this.add.rectangle(W / 2, SKY_H / 2,              W, SKY_H,           skyCol);
@@ -646,11 +651,13 @@ export class BattleScene extends Phaser.Scene {
         const pool = usable.length ? usable : boss.rewardGear;
         const gear = pool[Math.floor(Math.random() * pool.length)];
         addToInventory(this.game, gear);
+        const extras = boss.rewardExtra ?? [];
+        for (const id of extras) addToInventory(this.game, id);
         setFlag(this.game, bossFlag(boss.id));
         const questMsgs = recordBoss(this.game, boss.id);
         this.showMsg(`${this.pc.name} gained ${boss.rewardExp} Exp!`, () =>
           this.showSequential(
-            [...levelMsgs, `Found ${boss.rewardGold} gold!`, `Obtained ${EQUIPMENT[gear].name}!`, ...questMsgs],
+            [...levelMsgs, `Found ${boss.rewardGold} gold!`, `Obtained ${EQUIPMENT[gear].name}!`, ...extras.map(id => `Obtained ${EQUIPMENT[id].name}!`), ...questMsgs],
             () => this.exitBattle(),
           ));
       });

@@ -1,6 +1,9 @@
 import Phaser from "phaser";
 import { HERO_DRAWERS } from "@/gfx/heroSprites";
 import { drawWardenFront } from "@/gfx/bossSprites";
+import {
+  recolor, drawWolfFront, drawWolfBack, drawBoarFront, drawBoarBack, drawBriarqueenFront, drawGrukkFront,
+} from "@/gfx/zoneSprites";
 
 /**
  * Original battle-creature sprites (front + back, 64x64 each) for all 12 species,
@@ -1056,6 +1059,12 @@ function drawFinflopBack(g: Phaser.GameObjects.Graphics): void {
 export const CREATURE_DRAWERS: Record<number, { front: DrawFn; back: DrawFn }> = {
 ...HERO_DRAWERS,
 200: { front: drawWardenFront, back: drawWardenFront }, // boss: Cavern Warden (never in a party, so no distinct back view)
+201: { front: drawBriarqueenFront, back: drawBriarqueenFront }, // boss
+202: { front: drawGrukkFront, back: drawGrukkFront },           // boss
+210: { front: drawWolfFront, back: drawWolfBack },
+211: { front: recolor(drawMindlingFront, 0.33, 1.1), back: recolor(drawMindlingBack, 0.33, 1.1) },  // Briar Sprite: green Hedge Sprite
+212: { front: drawBoarFront, back: drawBoarBack },
+213: { front: recolor(drawFlitterwingFront, 0.09, 0.9), back: recolor(drawFlitterwingBack, 0.09, 0.9) }, // Dust Hawk: tan Carrion Crow
 16: { front: drawFlitterwingFront, back: drawFlitterwingBack },
 19: { front: drawNibbleratFront, back: drawNibbleratBack },
 25: { front: drawSparkitFront, back: drawSparkitBack },

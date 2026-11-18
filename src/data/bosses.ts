@@ -18,6 +18,7 @@ export interface BossDef {
   rewardGold: number;
   rewardExp: number;
   rewardGear: string[];     // one of these is guaranteed on the first win (favouring gear the party can use)
+  rewardExtra?: string[];   // always granted on the first win
 }
 
 export const BOSSES: Record<string, BossDef> = {
@@ -36,6 +37,40 @@ export const BOSSES: Record<string, BossDef> = {
     rewardGold: 200,
     rewardExp: 160,
     rewardGear: ["runeblade", "dragonscale", "archmage_staff", "archmage_raiment", "windpiercer"],
+  },
+  briarqueen: {
+    id: "briarqueen",
+    name: "Briarqueen",
+    speciesId: 201,
+    level: 15,
+    hpMult: 2.0,
+    atkMult: 1.0,
+    intro: "Brambles knot and twist - the Briarqueen rises to meet you!",
+    enrageAt: 0.5,
+    enrageMult: 1.25,
+    enrageMsg: "Thorns erupt across the Briarqueen's body!",
+    defeatMsg: "The Briarqueen withers, and the forest breathes again.",
+    rewardGold: 320,
+    rewardExp: 300,
+    rewardGear: ["runeblade", "dragonscale", "archmage_staff", "archmage_raiment", "windpiercer"],
+    rewardExtra: ["heartwood_pendant"],
+  },
+  warlord_grukk: {
+    id: "warlord_grukk",
+    name: "Warlord Grukk",
+    speciesId: 202,
+    level: 18,
+    hpMult: 1.8,
+    atkMult: 0.8,
+    intro: "Warlord Grukk hefts his axe and bellows a challenge!",
+    enrageAt: 0.5,
+    enrageMult: 1.25,
+    enrageMsg: "Grukk roars and swings wild - he's seeing red!",
+    defeatMsg: "Warlord Grukk crashes down, his war band scattered.",
+    rewardGold: 450,
+    rewardExp: 420,
+    rewardGear: ["runeblade", "dragonscale", "archmage_staff", "archmage_raiment", "windpiercer"],
+    rewardExtra: ["warlords_crest"],
   },
 };
 
