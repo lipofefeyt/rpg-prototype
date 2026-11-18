@@ -9,6 +9,8 @@ import {
   addGold, addToInventory, equipItem, getGold, getInventory, getParty, setInventory,
 } from "@/systems/playerState";
 import { autosave } from "@/systems/saveLoad";
+import { QUESTS, QUEST_ORDER } from "@/data/quests";
+import { getQuestLog, progressText, rewardText } from "@/systems/quests";
 import type { WorldScene } from "@/scenes/WorldScene";
 
 /**
@@ -244,14 +246,54 @@ export class MenuScene extends Phaser.Scene {
       title: "MENU",
       rows: [
         { label: "Equipment", sub: "gear up your party", act: () => this.push(() => this.partyPicker()) },
+        { label: "Quests", sub: this.questSummary(), act: () => this.push(() => this.questLog()) },
         { label: "Pack", sub: "items & spare gear", act: () => this.push(() => this.pack()) },
         { label: "Close", act: () => this.close() },
       ],
       info: (i) => [
         ["Equip weapons, armor and trinkets. Gear adds flat bonuses to a fighter's stats.",
+         "Review the tasks people have given you.",
          "Use healing items, and review spare gear.",
          "Back to the road."][i] ?? "",
       ],
+    };
+  }
+
+  private questSummary(): string {
+    const log = getQuestLog(this.game);
+    const active = Object.values(log).filter(s => s.status === "active").length;
+    const ready = Object.values(log).filter(s => s.status === "ready").length;
+    return ready ? `${ready} ready!` : active ? `${active} active` : "none yet";
+  }
+
+  private questLog(): Screen {
+    const log = getQuestLog(this.game);
+    // Ready first, then active, then done.
+    const rank = { ready: 0, active: 1, done: 2 } as const;
+    const ids = QUEST_ORDER.filter(id => log[id])
+      .sort((a, b) => rank[log[a].status] - rank[log[b].status]);
+    const rows: Row[] = ids.map(id => {
+      const st = log[id].status;
+      return {
+        label: QUESTS[id].title,
+        sub: st === "ready" ? "ready!" : st === "done" ? "done" : progressText(this.game, QUESTS[id]).replace(/^.*: /, ""),
+        enabled: st !== "done",
+      };
+    });
+    if (!rows.length) rows.push({ label: "(no quests yet)", enabled: false });
+    return {
+      title: "QUESTS",
+      rows,
+      info: (i) => {
+        const q = ids[i] ? QUESTS[ids[i]] : null;
+        if (!q) return ["Talk to people with a ! over their head to pick up quests."];
+        const st = log[q.id].status;
+        return [
+          q.title, "", q.summary, "", progressText(this.game, q), "",
+          `Reward: ${rewardText(q)}`,
+          st === "ready" ? `Return to ${q.giverName}.` : st === "done" ? "Completed." : `Giver: ${q.giverName}`,
+        ];
+      },
     };
   }
 

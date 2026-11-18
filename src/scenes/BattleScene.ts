@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { anchor, playEntrance, playSendIn, playAttack, playBuff, playHit, playFaint, playTamed, playWobble } from "@/gfx/spriteAnim";
+import { recordDefeat, recordTame } from "@/systems/quests";
 import { EQUIPMENT, goldReward, rollGearDrop } from "@/data/equipment";
 import { makeBattleCreature, gainExp, SPECIES, type BattleCreature, type StatusCondition } from "@/data/creatures";
 import { MOVES, type MoveDef } from "@/data/moves";
@@ -604,8 +605,10 @@ export class BattleScene extends Phaser.Scene {
           spoils.push(`The ${this.wild.name} dropped ${EQUIPMENT[drop].name}!`);
         }
 
+        const questMsgs = recordDefeat(this.game, this.wild.speciesId);
+
         this.showMsg(`${this.pc.name} gained ${expGain} Exp!`, () =>
-          this.showSequential([...levelMsgs, ...spoils], () => this.exitBattle()));
+          this.showSequential([...levelMsgs, ...spoils, ...questMsgs], () => this.exitBattle()));
       });
     });
   }
@@ -640,11 +643,13 @@ export class BattleScene extends Phaser.Scene {
         this.tweens.add({ targets: charm, y: charm.y - 18, alpha: 0, duration: 450 });
         if (this.party.length < MAX_PARTY_SIZE) {
           this.party.push(this.wild);
-          this.showMsg(`${this.wild.name} was tamed!`, () => this.exitBattle());
+          const questMsgs = recordTame(this.game, this.wild.speciesId);
+          this.showMsg(`${this.wild.name} was tamed!`, () => this.showSequential(questMsgs, () => this.exitBattle()));
         } else {
           // No storage/PC-box system yet (that's a later milestone) - a catch
           // with a full party is just lost rather than crashing or blocking.
-          this.showMsg(`${this.wild.name} was tamed! But your party is full...`, () => this.exitBattle());
+          const questMsgs = recordTame(this.game, this.wild.speciesId);
+          this.showMsg(`${this.wild.name} was tamed! But your party is full...`, () => this.showSequential(questMsgs, () => this.exitBattle()));
         }
       }),
     );

@@ -6,6 +6,9 @@ import type { BattleInitData } from "@/scenes/BattleScene";
 import { SCRIPTS } from "@/data/scripts";
 import { getTouchState, type TouchState } from "@/systems/touchInput";
 import { autosave, type WorldSaveState } from "@/systems/saveLoad";
+import {
+  acceptQuest, markerFor, pickNpcQuest, progressText, recordVisit, turnInQuest,
+} from "@/systems/quests";
 
 const MOVE_DURATION = 150;
 
@@ -47,6 +50,7 @@ export class WorldScene extends Phaser.Scene {
   private actionKey!: Phaser.Input.Keyboard.Key;
   private menuKeys: Phaser.Input.Keyboard.Key[] = [];
   private pendingShop = false;
+  private questMarkers: Phaser.GameObjects.Text[] = [];
   private touch!: TouchState;
 
   private tilemap!: Phaser.Tilemaps.Tilemap;
@@ -91,6 +95,7 @@ export class WorldScene extends Phaser.Scene {
 
     // ── Zone (tilemap + NPCs) ────────────────────────────────────────────────
     this.setupZone(startZone);
+    this.refreshQuestMarkers();
 
     // ── Camera ──────────────────────────────────────────────────────────────
     this.cameras.main.startFollow(this.player, true);
@@ -125,10 +130,11 @@ export class WorldScene extends Phaser.Scene {
     this.game.events.on("dialogue:done", () => {
       this.dialogueLocked = false;
       this.requireZRelease = true; // won't re-arm until player releases Z
+      this.refreshQuestMarkers();
       if (this.pendingShop) { this.pendingShop = false; this.openMenu("shop"); }
     }, this);
     // Returning from the menu: don't let the Z/X that closed it trigger an interaction.
-    this.events.on(Phaser.Scenes.Events.RESUME, () => { this.requireZRelease = true; });
+    this.events.on(Phaser.Scenes.Events.RESUME, () => { this.requireZRelease = true; this.refreshQuestMarkers(); });
 
     this.scene.launch("UIScene");
 
@@ -180,6 +186,8 @@ export class WorldScene extends Phaser.Scene {
     if (this.tilemap) this.tilemap.destroy();
     for (const npc of this.activeNpcs) npc.destroy();
     this.activeNpcs = [];
+    for (const m of this.questMarkers) m.destroy();
+    this.questMarkers = [];
 
     // Build tilemap from data array
     this.tilemap = this.make.tilemap({
@@ -209,6 +217,7 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.fadeOut(200, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () => {
       this.setupZone(ZONES[targetId]);
+      this.refreshQuestMarkers();
       this.tileX = spawnX;
       this.tileY = spawnY;
       this.player.setPosition(
@@ -220,6 +229,8 @@ export class WorldScene extends Phaser.Scene {
       this.cameras.main.once("camerafadeincomplete", () => {
         this.isMoving = false;
         autosave(this.game, this.getSaveState());
+        const visitMsgs = recordVisit(this.game, targetId);
+        if (visitMsgs.length) { this.showDialogue(visitMsgs); this.refreshQuestMarkers(); }
       });
     });
   }
@@ -303,6 +314,21 @@ export class WorldScene extends Phaser.Scene {
     // Check NPCs
     const npc = this.currentZone.npcs.find(n => n.tileX === tx && n.tileY === ty);
     if (npc) {
+      const quest = pickNpcQuest(this.game, npc.questIds);
+      if (quest) {
+        const { kind, def } = quest;
+        let pages: string[];
+        if (kind === "offer") {
+          acceptQuest(this.game, def.id);
+          pages = [...def.offer, `New quest: ${def.title}\n${def.summary}`];
+        } else if (kind === "ready") {
+          pages = [...def.ready, turnInQuest(this.game, def.id)];
+        } else {
+          pages = [...def.active, `${def.title}\n${progressText(this.game, def)}`];
+        }
+        this.showDialogue(pages, npc.name);
+        return;
+      }
       if (npc.shop) this.pendingShop = true;
       this.showDialogue(SCRIPTS[npc.scriptId] ?? [`[Missing script: ${npc.scriptId}]`], npc.name);
       return;
@@ -313,6 +339,23 @@ export class WorldScene extends Phaser.Scene {
     if (sign) {
       this.showDialogue(SCRIPTS[sign.scriptId] ?? [`[Missing script: ${sign.scriptId}]`]);
     }
+  }
+
+  /** "!" over givers with a new quest, "?" over givers waiting for a turn-in. */
+  private refreshQuestMarkers(): void {
+    for (const m of this.questMarkers) m.destroy();
+    this.questMarkers = [];
+    this.currentZone.npcs.forEach((def, i) => {
+      const spr = this.activeNpcs[i];
+      const mark = markerFor(this.game, def.questIds);
+      if (!spr || !mark) return;
+      const t = this.add.text(spr.x, spr.y - 14, mark, {
+        fontSize: "11px", fontFamily: "monospace", fontStyle: "bold",
+        color: mark === "!" ? "#ffdd44" : "#66ddff", stroke: "#000000", strokeThickness: 3,
+      }).setOrigin(0.5).setDepth(4);
+      this.tweens.add({ targets: t, y: t.y - 3, duration: 500, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+      this.questMarkers.push(t);
+    });
   }
 
   /** Pauses the world and opens the pause menu or the merchant's shop (MenuScene resumes both scenes on close). */

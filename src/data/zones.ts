@@ -19,6 +19,8 @@ export interface NpcDef {
   tint: number;
   /** If true, the dialogue is followed by the shop screen. */
   shop?: boolean;
+  /** Quests this NPC gives, checked in order (see systems/quests.ts). */
+  questIds?: string[];
 }
 
 export interface SignDef {
@@ -182,9 +184,9 @@ export const ZONES: Record<string, ZoneDef> = {
     defaultSpawnX: PATH_COL,
     defaultSpawnY: PATH_ROW,
     npcs: [
-      { id: "elder",    name: "Elder Oak",     tileX: 23, tileY: 18, facing: "right", scriptId: "npc_elder",    tint: 0xffddaa },
-      { id: "guard",    name: "Guard",         tileX: 27, tileY: 21, facing: "left",  scriptId: "npc_guard",    tint: 0xaabbff },
-      { id: "merchant", name: "Merchant",      tileX: 23, tileY: 23, facing: "right", scriptId: "npc_merchant", tint: 0xaaffbb, shop: true },
+      { id: "elder",    name: "Elder Oak",     tileX: 23, tileY: 18, facing: "right", scriptId: "npc_elder",    tint: 0xffddaa, questIds: ["rats", "scout_cave"] },
+      { id: "guard",    name: "Guard",         tileX: 27, tileY: 21, facing: "left",  scriptId: "npc_guard",    tint: 0xaabbff, questIds: ["crows"] },
+      { id: "merchant", name: "Merchant",      tileX: 23, tileY: 23, facing: "right", scriptId: "npc_merchant", tint: 0xaaffbb, shop: true, questIds: ["imps"] },
     ],
     signs: [
       { tileX: 24, tileY: 19, scriptId: "sign_crossroads" },
@@ -214,7 +216,7 @@ export const ZONES: Record<string, ZoneDef> = {
     defaultSpawnX: CAVE_EXIT_COL,
     defaultSpawnY: CAVE_ROWS - 3,
     npcs: [
-      { id: "miner", name: "Miner Cole", tileX: 15, tileY: 8, facing: "left", scriptId: "npc_miner", tint: 0xffcc88 },
+      { id: "miner", name: "Miner Cole", tileX: 15, tileY: 8, facing: "left", scriptId: "npc_miner", tint: 0xffcc88, questIds: ["golems"] },
     ],
     signs: [
       { tileX: CAVE_EXIT_COL, tileY: CAVE_ROWS - 4, scriptId: "sign_cave_exit" },
@@ -234,8 +236,8 @@ export const ZONES: Record<string, ZoneDef> = {
     defaultSpawnX: SEASIDE_PATH_COL,
     defaultSpawnY: 2,
     npcs: [
-      { id: "fisherman", name: "Fisherman Tam", tileX: SEASIDE_PATH_COL - 3, tileY: 8,  facing: "right", scriptId: "npc_fisherman", tint: 0xaaccee },
-      { id: "sailor",    name: "Sailor Reyes",  tileX: SEASIDE_PATH_COL + 3, tileY: 12, facing: "left",  scriptId: "npc_sailor",    tint: 0xeecc88 },
+      { id: "fisherman", name: "Fisherman Tam", tileX: SEASIDE_PATH_COL - 3, tileY: 8,  facing: "right", scriptId: "npc_fisherman", tint: 0xaaccee, questIds: ["carp"] },
+      { id: "sailor",    name: "Sailor Reyes",  tileX: SEASIDE_PATH_COL + 3, tileY: 12, facing: "left",  scriptId: "npc_sailor",    tint: 0xeecc88, questIds: ["tame_first"] },
     ],
     signs: [
       { tileX: SEASIDE_PATH_COL, tileY: SEASIDE_ROWS - 3, scriptId: "sign_seaside_shore" },
