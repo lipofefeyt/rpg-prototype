@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import type { TouchState } from "@/systems/touchInput";
+import { BASE_WIDTH, SAFE_INSET_X } from "@/config";
 
 const PANEL_FILL   = 0x08081a;
 const PANEL_ALPHA  = 0.55;
@@ -24,8 +25,10 @@ export class TouchControls {
     const H = scene.scale.height;
     const depth = 90; // below DialogueBox (100), above the world
 
-    const btn = 22;
-    const cx = 10 + btn + 2; // d-pad center x
+    // On wide screens (phones) keep the controls clear of the camera cutout / rounded corners.
+    const edge = W > BASE_WIDTH ? SAFE_INSET_X : 10;
+    const btn = 28;
+    const cx = edge + btn * 1.5 + 2; // d-pad center x (left button starts at the edge inset)
     const cy = H - 10 - btn - 2; // d-pad center y
 
     const dirSpecs: { dir: keyof Pick<TouchState, "up" | "down" | "left" | "right">; x: number; y: number; label: string }[] = [
@@ -53,9 +56,10 @@ export class TouchControls {
       this.labels.push(label);
     }
 
-    const ax = W - 10 - 24;
-    const ay = H - 10 - 24;
-    this.actionButton = scene.add.circle(ax, ay, 24, PANEL_FILL, PANEL_ALPHA)
+    const ar = 28; // action button radius
+    const ax = W - edge - ar;
+    const ay = H - 10 - ar;
+    this.actionButton = scene.add.circle(ax, ay, ar, PANEL_FILL, PANEL_ALPHA)
       .setStrokeStyle(2, STROKE_COLOR, 1)
       .setScrollFactor(0)
       .setDepth(depth)
@@ -69,14 +73,14 @@ export class TouchControls {
     this.labels.push(actionLabel);
 
     // Menu button (top-right): opens the pause menu (equipment, pack).
-    this.menuButton = scene.add.rectangle(W - 10 - 18, 10 + 14, 36, 28, PANEL_FILL, PANEL_ALPHA)
+    this.menuButton = scene.add.rectangle(W - edge - 22, 10 + 16, 44, 32, PANEL_FILL, PANEL_ALPHA)
       .setStrokeStyle(2, STROKE_COLOR, 1)
       .setScrollFactor(0)
       .setDepth(depth)
       .setInteractive({ useHandCursor: false });
     this.menuButton.on("pointerdown", () => { state.menuPressed = true; });
     this.labels.push(
-      scene.add.text(W - 10 - 18, 10 + 14, "MENU", { ...LABEL_STYLE, fontSize: "9px" })
+      scene.add.text(W - edge - 22, 10 + 16, "MENU", { ...LABEL_STYLE, fontSize: "9px" })
         .setOrigin(0.5).setScrollFactor(0).setDepth(depth),
     );
   }

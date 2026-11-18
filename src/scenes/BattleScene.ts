@@ -11,9 +11,11 @@ import { ITEMS } from "@/data/items";
 import { MAX_PARTY_SIZE, blackout, setFlag, addGold, addToInventory, getParty, setParty, getInventory, setInventory } from "@/systems/playerState";
 import { autosave } from "@/systems/saveLoad";
 import type { WorldScene } from "@/scenes/WorldScene";
+import { centerFixedLayout, attachFpsOverlay } from "@/config";
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 const W = 480, H = 320;
+const BG_W = 2400; // backdrop strips are drawn far wider than W so wide screens have no empty sides
 const FIELD_H = 178;
 const UI_Y    = FIELD_H;
 const SKY_H   = 108;
@@ -142,13 +144,14 @@ export class BattleScene extends Phaser.Scene {
     }
     this.activeIndex = Math.max(0, this.party.findIndex(c => c.currentHp > 0));
 
+    centerFixedLayout(this, 0x090916);
     const bg = BATTLE_BACKDROPS[zoneId] ?? BATTLE_BACKDROPS.overworld;
     const { sky: skyCol, ground: gndCol, horizon: hrzCol, shadow: shdCol } = bg;
 
     // Background
-    this.add.rectangle(W / 2, SKY_H / 2,              W, SKY_H,           skyCol);
-    this.add.rectangle(W / 2, SKY_H + (FIELD_H - SKY_H) / 2, W, FIELD_H - SKY_H, gndCol);
-    this.add.rectangle(W / 2, SKY_H, W, 2, hrzCol);
+    this.add.rectangle(W / 2, SKY_H / 2,              BG_W, SKY_H,           skyCol);
+    this.add.rectangle(W / 2, SKY_H + (FIELD_H - SKY_H) / 2, BG_W, FIELD_H - SKY_H, gndCol);
+    this.add.rectangle(W / 2, SKY_H, BG_W, 2, hrzCol);
     this.add.ellipse(WILD_X, WILD_Y + 2, 56, 10, shdCol, 0.55);
     this.add.ellipse(PLYR_X, PLYR_Y + 2, 56, 10, shdCol, 0.55);
 
@@ -170,8 +173,9 @@ export class BattleScene extends Phaser.Scene {
     this.buildPcHpPanel();
 
     // Divider + bottom BG
-    this.add.rectangle(W / 2, FIELD_H, W, 2, 0x000000).setOrigin(0.5, 0);
-    this.add.rectangle(W / 2, UI_Y + (H - UI_Y) / 2, W, H - UI_Y, 0x090916);
+    this.add.rectangle(W / 2, FIELD_H, BG_W, 2, 0x000000).setOrigin(0.5, 0);
+    this.add.rectangle(W / 2, UI_Y + (H - UI_Y) / 2, BG_W, H - UI_Y, 0x090916);
+    attachFpsOverlay(this);
 
     // Message text
     this.msgText = this.add.text(12, UI_Y + 8, "", {

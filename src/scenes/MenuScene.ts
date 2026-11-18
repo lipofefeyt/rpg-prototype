@@ -13,6 +13,7 @@ import { fillPanel, strokePanel, cut } from "@/gfx/panel";
 import { QUESTS, QUEST_ORDER } from "@/data/quests";
 import { getQuestLog, progressText, rewardText } from "@/systems/quests";
 import type { WorldScene } from "@/scenes/WorldScene";
+import { centerFixedLayout } from "@/config";
 
 /**
  * Pause menu (Equipment / Pack) and the merchant's shop, as one list-driven scene.
@@ -76,7 +77,8 @@ export class MenuScene extends Phaser.Scene {
     this.labels = []; this.subs = []; this.zones = []; this.zoneRow = [];
     this.readyAt = this.time.now + 220; // ignore the key press that opened us
 
-    this.add.rectangle(0, 0, W, H, 0x08091a).setOrigin(0);
+    centerFixedLayout(this, 0x08091a);
+    this.add.rectangle(-1000, 0, W + 2000, H, 0x08091a).setOrigin(0);
     this.gfx = this.add.graphics();
     const mono = (size: number, color: string) => ({ fontSize: `${size}px`, color, fontFamily: "monospace" });
 

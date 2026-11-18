@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { fillPanel, strokePanel, cut } from "@/gfx/panel";
+import { BASE_WIDTH, SAFE_INSET_X } from "@/config";
 
 const PAD           = 10;
 const BOX_H         = 74;
@@ -28,8 +29,9 @@ export class DialogueBox {
     this.scene = scene;
     const W    = scene.scale.width;
     const H    = scene.scale.height;
-    const boxW = W - MARGIN * 2;
-    const boxX = MARGIN;
+    const side = W > BASE_WIDTH ? SAFE_INSET_X : MARGIN; // keep clear of the camera cutout on wide screens
+    const boxW = W - side * 2;
+    const boxX = side;
     const boxY = H - BOX_H - MARGIN;
 
     // ── Speaker name panel ───────────────────────────────────────────────────

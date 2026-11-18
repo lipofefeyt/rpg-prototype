@@ -1,6 +1,7 @@
+import { CLOCK_SPEED_MULT } from "@/config";
+
 export const TILE_SIZE = 16;
-export const GAME_WIDTH = 480;
-export const GAME_HEIGHT = 320;
+// Canvas size lives in src/config.ts (width adapts to the screen's aspect ratio).
 
 export const MAP_COLS = 50;
 export const MAP_ROWS = 40;
@@ -39,4 +40,5 @@ export const PLAINS_PATH_ROW = 10;
 export const ANIM_BASE = { down: 0, up: 3, left: 6, right: 9 } as const;
 
 // In-game clock speed: how many real milliseconds = 1 in-game minute
-export const MS_PER_GAME_MINUTE = 500; // 1 real second = 2 in-game minutes
+// (divided by VITE_CLOCK_SPEED_MULT so test builds can speed up the day/night cycle)
+export const MS_PER_GAME_MINUTE = 500 / CLOCK_SPEED_MULT; // 1 real second = 2 in-game minutes

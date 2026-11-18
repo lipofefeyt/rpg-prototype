@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:s25": "tsc && vite build --mode s25 && cap sync android",
     "preview": "vite preview"
   },
   "dependencies": {

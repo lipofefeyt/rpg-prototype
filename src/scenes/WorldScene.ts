@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { type Direction } from "@/types";
 import { TILE_SIZE, ANIM_BASE, MS_PER_GAME_MINUTE, TILE_GRASS, TILE_PATH, TILE_TALLGRASS, TILE_CAVE_FLOOR } from "@/constants";
+import { ENCOUNTER_RATE_MULT, attachFpsOverlay } from "@/config";
 import { ZONES, type ZoneDef, type NpcDef } from "@/data/zones";
 import type { BattleInitData } from "@/scenes/BattleScene";
 import { SCRIPTS } from "@/data/scripts";
@@ -142,6 +143,7 @@ export class WorldScene extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.RESUME, () => { this.requireZRelease = true; this.refreshQuestMarkers(); this.refreshBosses(); });
 
     this.scene.launch("UIScene");
+    attachFpsOverlay(this);
 
     autosave(this.game, this.getSaveState()); // covers "quit before taking a single step"
   }
@@ -423,7 +425,7 @@ export class WorldScene extends Phaser.Scene {
     const tile = this.groundLayer.getTileAt(this.tileX, this.tileY);
     if (tile?.index !== TILE_TALLGRASS) return;
     const pool = this.currentZone.encounterPool;
-    if (!pool.length || Math.random() > this.currentZone.encounterRate) return;
+    if (!pool.length || Math.random() > this.currentZone.encounterRate * ENCOUNTER_RATE_MULT) return;
 
     const entry = pickByWeight(pool);
     const level = Phaser.Math.Between(entry.minLevel, entry.maxLevel);

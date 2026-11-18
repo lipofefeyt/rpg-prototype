@@ -4,6 +4,7 @@ import type { CreatureType } from "@/types";
 import { TYPE_LABELS } from "@/data/typeLabels";
 import { fillPanel, strokePanel, cut } from "@/gfx/panel";
 import { getInventory, setParty, equipItem } from "@/systems/playerState";
+import { BASE_WIDTH, centerFixedLayout } from "@/config";
 
 const TYPE_COLORS: Record<CreatureType, string> = {
   grass:    "#4cbb5c", poison:   "#8040c0", fire:     "#e84a35",
@@ -70,11 +71,12 @@ export class StarterScene extends Phaser.Scene {
   constructor() { super({ key: "StarterScene" }); }
 
   create() {
-    const W = this.scale.width;   // 480
+    centerFixedLayout(this);
+    const W = BASE_WIDTH;         // 480 (scene is centred in wider canvases)
     const H = this.scale.height;  // 320
 
     // ── Background ───────────────────────────────────────────────────────────
-    this.add.rectangle(0, 0, W, H, 0x08091a).setOrigin(0);
+    this.add.rectangle(-1000, 0, W + 2000, H, 0x08091a).setOrigin(0);
 
     // Pixel star field
     const starGfx = this.add.graphics();
@@ -89,9 +91,9 @@ export class StarterScene extends Phaser.Scene {
     // Subtle ground line at bottom
     const gndGfx = this.add.graphics();
     gndGfx.fillStyle(0x0f1238, 1);
-    gndGfx.fillRect(0, H - 30, W, 30);
+    gndGfx.fillRect(-1000, H - 30, W + 2000, 30);
     gndGfx.lineStyle(1, 0x1a2255, 1);
-    gndGfx.strokeRect(0, H - 30, W, 1);
+    gndGfx.strokeRect(-1000, H - 30, W + 2000, 1);
 
     // Card panel behind starters
     const card = this.add.graphics();
@@ -183,7 +185,7 @@ export class StarterScene extends Phaser.Scene {
   // ── Private ──────────────────────────────────────────────────────────────────
 
   private refreshDisplay(): void {
-    const W       = this.scale.width;
+    const W       = BASE_WIDTH;
     const starter = STARTERS[this.selected];
     const hx      = SPR_X[this.selected];
 
