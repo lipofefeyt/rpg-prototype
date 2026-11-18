@@ -282,12 +282,12 @@ export const ZONES: Record<string, ZoneDef> = {
     ],
     encounterRate: 0.15,
     encounterPool: [
-      { speciesId: 16,  minLevel: 3, maxLevel: 6,  weight: 30 }, // Flitterwing
-      { speciesId: 19,  minLevel: 3, maxLevel: 5,  weight: 25 }, // Nibblerat
-      { speciesId: 25,  minLevel: 4, maxLevel: 7,  weight: 10 }, // Sparkit
-      { speciesId: 63,  minLevel: 3, maxLevel: 6,  weight: 5  }, // Mindling
-      { speciesId: 54,  minLevel: 4, maxLevel: 7,  weight: 15 }, // Quackle
-      { speciesId: 129, minLevel: 3, maxLevel: 5,  weight: 15 }, // Finflop
+      { speciesId: 16,  minLevel: 3, maxLevel: 6,  weight: 30 }, // Carrion Crow
+      { speciesId: 19,  minLevel: 3, maxLevel: 5,  weight: 25 }, // Giant Rat
+      { speciesId: 25,  minLevel: 4, maxLevel: 7,  weight: 10 }, // Spark Imp
+      { speciesId: 63,  minLevel: 3, maxLevel: 6,  weight: 5  }, // Hedge Sprite
+      { speciesId: 54,  minLevel: 4, maxLevel: 7,  weight: 15 }, // Marsh Duck
+      { speciesId: 129, minLevel: 3, maxLevel: 5,  weight: 15 }, // River Carp
     ],
   },
 
@@ -332,10 +332,10 @@ export const ZONES: Record<string, ZoneDef> = {
     ],
     encounterRate: 0.15,
     encounterPool: [
-      { speciesId: 129, minLevel: 6, maxLevel: 10, weight: 30 }, // Finflop
-      { speciesId: 54,  minLevel: 6, maxLevel: 9,  weight: 25 }, // Quackle
-      { speciesId: 16,  minLevel: 5, maxLevel: 9,  weight: 25 }, // Flitterwing
-      { speciesId: 74,  minLevel: 6, maxLevel: 10, weight: 20 }, // Rockling
+      { speciesId: 129, minLevel: 6, maxLevel: 10, weight: 30 }, // River Carp
+      { speciesId: 54,  minLevel: 6, maxLevel: 9,  weight: 25 }, // Marsh Duck
+      { speciesId: 16,  minLevel: 5, maxLevel: 9,  weight: 25 }, // Carrion Crow
+      { speciesId: 74,  minLevel: 6, maxLevel: 10, weight: 20 }, // Stone Golem
     ],
   },
   forest: {

@@ -58,7 +58,7 @@ export class StarterScene extends Phaser.Scene {
   private rightKey!:   Phaser.Input.Keyboard.Key;
   private confirmKey!: Phaser.Input.Keyboard.Key;
 
-  private selected  = 1; // start on Cindertail (center)
+  private selected  = 1; // start on the Mage (center)
   private sprites:    Phaser.GameObjects.Image[] = [];
   private highlight!: Phaser.GameObjects.Graphics;
   private nameText!:  Phaser.GameObjects.Text;
