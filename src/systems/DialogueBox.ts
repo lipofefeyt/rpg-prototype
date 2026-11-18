@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { fillPanel, strokePanel, cut } from "@/gfx/panel";
 
 const PAD           = 10;
 const BOX_H         = 74;
@@ -35,9 +36,9 @@ export class DialogueBox {
     const spY = boxY - SPEAKER_H - SPEAKER_GAP;
     this.speakerPanel = scene.add.graphics();
     this.speakerPanel.fillStyle(0x08081a, 0.95);
-    this.speakerPanel.fillRoundedRect(boxX, spY, 90, SPEAKER_H, 3);
-    this.speakerPanel.lineStyle(2, 0x4488ff, 1);
-    this.speakerPanel.strokeRoundedRect(boxX, spY, 90, SPEAKER_H, 3);
+    fillPanel(this.speakerPanel, boxX, spY, 90, SPEAKER_H, cut(3));
+    this.speakerPanel.fillStyle(0x4488ff, 1);
+    strokePanel(this.speakerPanel, boxX, spY, 90, SPEAKER_H, cut(3), 2);
 
     this.speakerLabel = scene.add.text(boxX + 7, spY + 4, "", {
       fontSize: "10px",
@@ -49,12 +50,12 @@ export class DialogueBox {
     // ── Main dialogue panel ──────────────────────────────────────────────────
     this.panel = scene.add.graphics();
     this.panel.fillStyle(0x08081a, 0.93);
-    this.panel.fillRoundedRect(boxX, boxY, boxW, BOX_H, 4);
-    this.panel.lineStyle(2, 0x4488ff, 1);
-    this.panel.strokeRoundedRect(boxX, boxY, boxW, BOX_H, 4);
+    fillPanel(this.panel, boxX, boxY, boxW, BOX_H, cut(4));
+    this.panel.fillStyle(0x4488ff, 1);
+    strokePanel(this.panel, boxX, boxY, boxW, BOX_H, cut(4), 2);
     // Inner glow line (subtle highlight at top)
-    this.panel.lineStyle(1, 0x6699ff, 0.35);
-    this.panel.strokeRoundedRect(boxX + 2, boxY + 2, boxW - 4, BOX_H - 4, 3);
+    this.panel.fillStyle(0x6699ff, 0.35);
+    strokePanel(this.panel, boxX + 3, boxY + 3, boxW - 6, BOX_H - 6, cut(3), 1);
 
     this.textObj = scene.add.text(boxX + PAD, boxY + PAD, "", {
       fontSize: "11px",

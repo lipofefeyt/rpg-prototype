@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { makeBattleCreature } from "@/data/creatures";
 import type { CreatureType } from "@/types";
 import { TYPE_LABELS } from "@/data/typeLabels";
+import { fillPanel, strokePanel, cut } from "@/gfx/panel";
 import { getInventory, setParty, equipItem } from "@/systems/playerState";
 
 const TYPE_COLORS: Record<CreatureType, string> = {
@@ -95,9 +96,9 @@ export class StarterScene extends Phaser.Scene {
     // Card panel behind starters
     const card = this.add.graphics();
     card.fillStyle(0x0c1030, 0.7);
-    card.fillRoundedRect(34, 60, W - 68, 170, 8);
-    card.lineStyle(1, 0x1e2f88, 0.55);
-    card.strokeRoundedRect(34, 60, W - 68, 170, 8);
+    fillPanel(card, 34, 60, W - 68, 170, cut(8));
+    card.fillStyle(0x1e2f88, 0.55);
+    strokePanel(card, 34, 60, W - 68, 170, cut(8), 1);
 
     // Shadow ellipses under each sprite (grounding)
     const shadowGfx = this.add.graphics();
@@ -189,9 +190,9 @@ export class StarterScene extends Phaser.Scene {
     // Highlight glow
     this.highlight.clear();
     this.highlight.fillStyle(0x2244cc, 0.16);
-    this.highlight.fillRoundedRect(hx - HL_W / 2, HL_TOP, HL_W, HL_H, 7);
-    this.highlight.lineStyle(2, 0x4488ff, 0.88);
-    this.highlight.strokeRoundedRect(hx - HL_W / 2, HL_TOP, HL_W, HL_H, 7);
+    fillPanel(this.highlight, hx - HL_W / 2, HL_TOP, HL_W, HL_H, cut(7));
+    this.highlight.fillStyle(0x4488ff, 0.88);
+    strokePanel(this.highlight, hx - HL_W / 2, HL_TOP, HL_W, HL_H, cut(7), 2);
 
     // Tween sprites: selected grows, others shrink + dim
     for (let i = 0; i < 3; i++) {

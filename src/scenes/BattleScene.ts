@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { anchor, playEntrance, playSendIn, playAttack, playBuff, playHit, playFaint, playTamed, playWobble } from "@/gfx/spriteAnim";
+import { fillPanel, strokePanel, cut } from "@/gfx/panel";
 import { recordBoss, recordDefeat, recordTame } from "@/systems/quests";
 import { BOSSES, bossFlag, type BossDef } from "@/data/bosses";
 import { EQUIPMENT, canEquip, classOf, goldReward, rollGearDrop } from "@/data/equipment";
@@ -764,8 +765,8 @@ export class BattleScene extends Phaser.Scene {
   private buildWildHpPanel() {
     const [px, py, pw, ph] = [8, 8, 188, 50];
     const g = this.add.graphics();
-    g.fillStyle(0x0d1a2e, 0.88); g.fillRoundedRect(px, py, pw, ph, 4);
-    g.lineStyle(1.5, 0x1e3a6a);  g.strokeRoundedRect(px, py, pw, ph, 4);
+    g.fillStyle(0x0d1a2e, 0.88); fillPanel(g, px, py, pw, ph, cut(4));
+    g.fillStyle(0x1e3a6a, 1);    strokePanel(g, px, py, pw, ph, cut(4), 2);
 
     this.add.text(px + 8, py + 6, this.wild.name, { fontSize: "10px", color: "#e8eeff", fontFamily: "monospace" });
     this.add.text(px + pw - 8, py + 6, `Lv.${this.wild.level}`, {
@@ -778,8 +779,8 @@ export class BattleScene extends Phaser.Scene {
   private buildPcHpPanel() {
     const [px, py, pw, ph] = [216, 126, 256, 50];
     const g = this.add.graphics();
-    g.fillStyle(0x0d1a2e, 0.88); g.fillRoundedRect(px, py, pw, ph, 4);
-    g.lineStyle(1.5, 0x1e3a6a);  g.strokeRoundedRect(px, py, pw, ph, 4);
+    g.fillStyle(0x0d1a2e, 0.88); fillPanel(g, px, py, pw, ph, cut(4));
+    g.fillStyle(0x1e3a6a, 1);    strokePanel(g, px, py, pw, ph, cut(4), 2);
 
     this.pcNameText = this.add.text(px + 8, py + 6, this.pc.name, { fontSize: "10px", color: "#e8eeff", fontFamily: "monospace" });
     this.pcLevelText = this.add.text(px + pw - 8, py + 6, `Lv.${this.pc.level}`, {

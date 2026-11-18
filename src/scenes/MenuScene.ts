@@ -9,6 +9,7 @@ import {
   addGold, addToInventory, equipItem, getGold, getInventory, getParty, healParty, innCost, partyNeedsRest, setInventory,
 } from "@/systems/playerState";
 import { autosave } from "@/systems/saveLoad";
+import { fillPanel, strokePanel, cut } from "@/gfx/panel";
 import { QUESTS, QUEST_ORDER } from "@/data/quests";
 import { getQuestLog, progressText, rewardText } from "@/systems/quests";
 import type { WorldScene } from "@/scenes/WorldScene";
@@ -23,6 +24,8 @@ import type { WorldScene } from "@/scenes/WorldScene";
  */
 
 const W = 480, H = 320;
+/** Panel colour: the old 0.9-alpha fill pre-blended over the opaque scene background (see gfx/panel.ts for how panels are drawn). */
+const PANEL_FILL = 0x0b0f2e;
 const ROW_H = 24, VISIBLE = 9, LIST_X = 8, LIST_Y = 34, LIST_W = 274;
 const INFO_X = 290, INFO_W = 182;
 
@@ -193,10 +196,10 @@ export class MenuScene extends Phaser.Scene {
 
     const g = this.gfx;
     g.clear();
-    g.fillStyle(0x0c1030, 0.9); g.fillRoundedRect(LIST_X, LIST_Y, LIST_W, 222, 6);
-    g.lineStyle(1, 0x1e2f88, 0.8); g.strokeRoundedRect(LIST_X, LIST_Y, LIST_W, 222, 6);
-    g.fillStyle(0x0c1030, 0.9); g.fillRoundedRect(INFO_X, LIST_Y, INFO_W, 222, 6);
-    g.lineStyle(1, 0x1e2f88, 0.8); g.strokeRoundedRect(INFO_X, LIST_Y, INFO_W, 222, 6);
+    for (const [px, pw] of [[LIST_X, LIST_W], [INFO_X, INFO_W]] as [number, number][]) {
+      g.fillStyle(PANEL_FILL, 1);    fillPanel(g, px, LIST_Y, pw, 222, cut(6));
+      g.fillStyle(0x1e2f88, 0.8);    strokePanel(g, px, LIST_Y, pw, 222, cut(6), 1);
+    }
 
     for (let i = 0; i < VISIBLE; i++) {
       const idx = f.scroll + i;
