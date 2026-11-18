@@ -1,3 +1,6 @@
+// Shown as the project name in Android Studio (otherwise it would just be "android").
+rootProject.name = 'Emberhold'
+
 include ':app'
 include ':capacitor-cordova-android-plugins'
 project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
