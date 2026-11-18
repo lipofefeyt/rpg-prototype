@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { HERO_DRAWERS } from "@/gfx/heroSprites";
 import { drawWardenFront } from "@/gfx/bossSprites";
+import { drawSparkImpFront, drawSparkImpBack } from "@/gfx/sparkImp";
 import {
   recolor, drawWolfFront, drawWolfBack, drawBoarFront, drawBoarBack, drawBriarqueenFront, drawGrukkFront,
 } from "@/gfx/zoneSprites";
@@ -276,112 +277,6 @@ function drawNibbleratBack(g: Phaser.GameObjects.Graphics): void {
   R(STRIPE, 31, 20, 2, 28);
   R(TAIL, 44, 42, 16, 2);
   R(TAIL, 56, 32, 2, 12);
-}
-
-function drawSparkitFront(g: Phaser.GameObjects.Graphics): void {
-  const R = (c: number, x: number, y: number, w: number, h: number) => { g.fillStyle(c); g.fillRect(x, y, w, h); };
-  const BODY = 0xf0cc30;
-  const BELLY = 0xfff0a0;
-  const EAR = 0xf0cc30;
-  const EARTIP = 0x1a1a1a;
-  const CHEEK = 0xe85a4a;
-  const EYE = 0x1a1a1a;
-  const BOLT = 0x2a2a2a;
-
-  R(BODY, 27, 22, 10, 1);
-  R(BODY, 25, 23, 14, 1);
-  R(BODY, 24, 24, 16, 1);
-  R(BODY, 22, 25, 20, 2);
-  R(BODY, 21, 27, 22, 1);
-  R(BODY, 20, 28, 24, 2);
-  R(BODY, 19, 30, 26, 3);
-  R(BODY, 18, 33, 28, 7);
-  R(BODY, 19, 40, 26, 3);
-  R(BODY, 20, 43, 24, 2);
-  R(BODY, 21, 45, 22, 1);
-  R(BODY, 22, 46, 20, 2);
-  R(BODY, 24, 48, 16, 1);
-  R(BODY, 25, 49, 14, 1);
-  R(BODY, 27, 50, 10, 1);
-  R(BELLY, 28, 31, 8, 1);
-  R(BELLY, 27, 32, 10, 1);
-  R(BELLY, 26, 33, 12, 1);
-  R(BELLY, 25, 34, 14, 2);
-  R(BELLY, 24, 36, 16, 7);
-  R(BELLY, 25, 43, 14, 2);
-  R(BELLY, 26, 45, 12, 1);
-  R(BELLY, 27, 46, 10, 1);
-  R(BELLY, 28, 47, 8, 1);
-  R(BODY, 27, 11, 10, 1);
-  R(BODY, 25, 12, 14, 1);
-  R(BODY, 24, 13, 16, 1);
-  R(BODY, 23, 14, 18, 1);
-  R(BODY, 22, 15, 20, 3);
-  R(BODY, 21, 18, 22, 5);
-  R(BODY, 22, 23, 20, 3);
-  R(BODY, 23, 26, 18, 1);
-  R(BODY, 24, 27, 16, 1);
-  R(BODY, 25, 28, 14, 1);
-  R(BODY, 27, 29, 10, 1);
-  R(EAR, 20, 6, 6, 14);
-  R(EAR, 38, 6, 6, 14);
-  R(EARTIP, 20, 6, 6, 4);
-  R(EARTIP, 38, 6, 6, 4);
-  R(CHEEK, 21, 22, 6, 1);
-  R(CHEEK, 20, 23, 8, 3);
-  R(CHEEK, 21, 26, 6, 1);
-  R(CHEEK, 37, 22, 6, 1);
-  R(CHEEK, 36, 23, 8, 3);
-  R(CHEEK, 37, 26, 6, 1);
-  R(EYE, 26, 18, 3, 4);
-  R(EYE, 35, 18, 3, 4);
-  R(BOLT, 46, 40, 8, 4);
-  R(BOLT, 50, 44, 8, 4);
-  R(BOLT, 46, 48, 8, 4);
-}
-
-function drawSparkitBack(g: Phaser.GameObjects.Graphics): void {
-  const R = (c: number, x: number, y: number, w: number, h: number) => { g.fillStyle(c); g.fillRect(x, y, w, h); };
-  const BODY = 0xf0cc30;
-  const EAR = 0xf0cc30;
-  const EARTIP = 0x1a1a1a;
-  const STRIPE = 0xd8a820;
-  const BOLT = 0x2a2a2a;
-
-  R(BODY, 27, 22, 10, 1);
-  R(BODY, 25, 23, 14, 1);
-  R(BODY, 24, 24, 16, 1);
-  R(BODY, 22, 25, 20, 2);
-  R(BODY, 21, 27, 22, 1);
-  R(BODY, 20, 28, 24, 2);
-  R(BODY, 19, 30, 26, 3);
-  R(BODY, 18, 33, 28, 7);
-  R(BODY, 19, 40, 26, 3);
-  R(BODY, 20, 43, 24, 2);
-  R(BODY, 21, 45, 22, 1);
-  R(BODY, 22, 46, 20, 2);
-  R(BODY, 24, 48, 16, 1);
-  R(BODY, 25, 49, 14, 1);
-  R(BODY, 27, 50, 10, 1);
-  R(BODY, 27, 11, 10, 1);
-  R(BODY, 25, 12, 14, 1);
-  R(BODY, 24, 13, 16, 1);
-  R(BODY, 23, 14, 18, 1);
-  R(BODY, 22, 15, 20, 3);
-  R(BODY, 21, 18, 22, 5);
-  R(BODY, 22, 23, 20, 3);
-  R(BODY, 23, 26, 18, 1);
-  R(BODY, 24, 27, 16, 1);
-  R(BODY, 25, 28, 14, 1);
-  R(BODY, 27, 29, 10, 1);
-  R(EAR, 20, 6, 6, 14);
-  R(EAR, 38, 6, 6, 14);
-  R(EARTIP, 20, 6, 6, 4);
-  R(EARTIP, 38, 6, 6, 4);
-  R(STRIPE, 24, 30, 16, 3);
-  R(BOLT, 44, 38, 10, 4);
-  R(BOLT, 50, 42, 8, 4);
-  R(BOLT, 46, 46, 8, 4);
 }
 
 function drawMurkwingFront(g: Phaser.GameObjects.Graphics): void {
@@ -1067,7 +962,7 @@ export const CREATURE_DRAWERS: Record<number, { front: DrawFn; back: DrawFn }> =
 213: { front: recolor(drawFlitterwingFront, 0.09, 0.9), back: recolor(drawFlitterwingBack, 0.09, 0.9) }, // Dust Hawk: tan Carrion Crow
 16: { front: drawFlitterwingFront, back: drawFlitterwingBack },
 19: { front: drawNibbleratFront, back: drawNibbleratBack },
-25: { front: drawSparkitFront, back: drawSparkitBack },
+25: { front: drawSparkImpFront, back: drawSparkImpBack },
 41: { front: drawMurkwingFront, back: drawMurkwingBack },
 54: { front: drawQuackleFront, back: drawQuackleBack },
 63: { front: drawMindlingFront, back: drawMindlingBack },
