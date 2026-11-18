@@ -76,3 +76,38 @@ export function equipItem(game: Phaser.Game, creature: BattleCreature, slot: Equ
   setInventory(game, inv);
   return true;
 }
+
+/** One-off world flags (e.g. defeated bosses), kept in the registry and saved. */
+export type Flags = Record<string, boolean>;
+
+export function getFlags(game: Phaser.Game): Flags {
+  let f = game.registry.get("flags") as Flags | undefined;
+  if (!f) { f = {}; game.registry.set("flags", f); }
+  return f;
+}
+
+export function setFlags(game: Phaser.Game, flags: Flags): void {
+  game.registry.set("flags", flags);
+}
+
+export function hasFlag(game: Phaser.Game, key: string): boolean {
+  return !!getFlags(game)[key];
+}
+
+export function setFlag(game: Phaser.Game, key: string): void {
+  const f = getFlags(game);
+  f[key] = true;
+  setFlags(game, f);
+}
+
+/** Party wipe: everyone is healed and cured, at the cost of a quarter of the gold. Returns gold lost. */
+export function blackout(game: Phaser.Game): number {
+  for (const c of getParty(game)) {
+    c.currentHp = c.maxHp;
+    c.status = null;
+    for (const m of c.moves) m.pp = m.maxPp;
+  }
+  const lost = Math.floor(getGold(game) * 0.25);
+  addGold(game, -lost);
+  return lost;
+}

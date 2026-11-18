@@ -107,6 +107,10 @@ export function recordTame(game: Phaser.Game, speciesId: number): string[] {
   return bump(game, q => q.objective.kind === "tame" && (q.objective.speciesId === undefined || q.objective.speciesId === speciesId));
 }
 
+export function recordBoss(game: Phaser.Game, bossId: string): string[] {
+  return bump(game, q => q.objective.kind === "boss" && q.objective.bossId === bossId);
+}
+
 export function recordVisit(game: Phaser.Game, zoneId: string): string[] {
   return bump(game, q => q.objective.kind === "visit" && q.objective.zoneId === zoneId);
 }

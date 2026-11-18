@@ -21,6 +21,8 @@ export interface NpcDef {
   shop?: boolean;
   /** Quests this NPC gives, checked in order (see systems/quests.ts). */
   questIds?: string[];
+  /** Boss id (data/bosses.ts): interacting starts the boss fight until it is defeated. */
+  boss?: string;
 }
 
 export interface SignDef {
@@ -216,7 +218,8 @@ export const ZONES: Record<string, ZoneDef> = {
     defaultSpawnX: CAVE_EXIT_COL,
     defaultSpawnY: CAVE_ROWS - 3,
     npcs: [
-      { id: "miner", name: "Miner Cole", tileX: 15, tileY: 8, facing: "left", scriptId: "npc_miner", tint: 0xffcc88, questIds: ["golems"] },
+      { id: "miner", name: "Miner Cole", tileX: 15, tileY: 8, facing: "left", scriptId: "npc_miner", tint: 0xffcc88, questIds: ["golems", "warden"] },
+      { id: "warden", name: "Cavern Warden", tileX: 12, tileY: 6, facing: "down", scriptId: "boss_warden_intro", tint: 0xffffff, boss: "cavern_warden" },
     ],
     signs: [
       { tileX: CAVE_EXIT_COL, tileY: CAVE_ROWS - 4, scriptId: "sign_cave_exit" },

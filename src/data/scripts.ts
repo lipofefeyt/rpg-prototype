@@ -22,6 +22,12 @@ export const SCRIPTS: Record<string, string[]> = {
     "The underground lake at the far end is stunning.\nJust watch your step near the edge!",
   ],
 
+  // ── Bosses ──────────────────────────────────────────────────────────────
+  boss_warden_intro: [
+    "A colossus of stone and violet crystal sits\nbeside the lake, utterly still...",
+    "Its eyes flare red. The Cavern Warden rises!",
+  ],
+
   // ── Seaside Town NPCs ────────────────────────────────────────────────────
   npc_fisherman: [
     "Mornin'! The water's full of River Carp and\nMarsh Ducks today — good signs for a catch.",

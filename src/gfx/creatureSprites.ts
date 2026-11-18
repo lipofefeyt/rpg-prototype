@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { HERO_DRAWERS } from "@/gfx/heroSprites";
+import { drawWardenFront } from "@/gfx/bossSprites";
 
 /**
  * Original battle-creature sprites (front + back, 64x64 each) for all 12 species,
@@ -1054,6 +1055,7 @@ function drawFinflopBack(g: Phaser.GameObjects.Graphics): void {
 // ── Registry ──
 export const CREATURE_DRAWERS: Record<number, { front: DrawFn; back: DrawFn }> = {
 ...HERO_DRAWERS,
+200: { front: drawWardenFront, back: drawWardenFront }, // boss: Cavern Warden (never in a party, so no distinct back view)
 16: { front: drawFlitterwingFront, back: drawFlitterwingBack },
 19: { front: drawNibbleratFront, back: drawNibbleratBack },
 25: { front: drawSparkitFront, back: drawSparkitBack },

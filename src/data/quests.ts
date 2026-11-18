@@ -6,7 +6,8 @@
 export type Objective =
   | { kind: "defeat"; speciesId: number; count: number; label: string }
   | { kind: "tame";   speciesId?: number; count: number; label: string }  // any species when omitted
-  | { kind: "visit";  zoneId: string; label: string };
+  | { kind: "visit";  zoneId: string; label: string }
+  | { kind: "boss";   bossId: string; label: string };
 
 export interface QuestReward {
   gold: number;
@@ -91,10 +92,20 @@ export const QUESTS: Record<string, QuestDef> = Object.fromEntries(([
     active: ["Weaken one first - a Taming Charm works\nbest on wounded monsters."],
     ready: ["There's a bond! You're a true beastmaster.", "This bow has served me well. Use it."],
   },
+  {
+    id: "warden", title: "Heart of the Cavern", giverName: "Miner Cole",
+    summary: "Defeat the Cavern Warden guarding the underground lake.",
+    objective: { kind: "boss", bossId: "cavern_warden", label: "Cavern Warden defeated" },
+    reward: { gold: 150, items: { hawks_eye: 1 } },
+    requires: "scout_cave",
+    offer: ["Something huge sleeps by the underground lake -\nthe Cavern Warden. It's walled off every\ntunnel past it.", "Take it down and the whole cavern opens up.\nBring healing, and bring friends - it hits\nhard and gets worse when wounded."],
+    active: ["The Warden sleeps by the lake, north of\nhere. Good luck."],
+    ready: ["The tunnels are free! I knew you could do it.", "Take this - I found it deep in the rock.\nIt sees what others miss."],
+  },
 ] as QuestDef[]).map(q => [q.id, q]));
 
 export const QUEST_ORDER = Object.keys(QUESTS);
 
 export function targetCount(q: QuestDef): number {
-  return q.objective.kind === "visit" ? 1 : q.objective.count;
+  return "count" in q.objective ? q.objective.count : 1;
 }

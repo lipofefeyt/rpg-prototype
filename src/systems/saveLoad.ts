@@ -1,6 +1,6 @@
 import type Phaser from "phaser";
 import { Preferences } from "@capacitor/preferences";
-import { getParty, setParty, getInventory, setInventory, getGold, setGold, STARTING_GOLD } from "@/systems/playerState";
+import { getParty, setParty, getInventory, setInventory, getGold, setGold, STARTING_GOLD, getFlags, setFlags, type Flags } from "@/systems/playerState";
 import { getQuestLog, setQuestLog, type QuestLog } from "@/systems/quests";
 import type { Direction } from "@/types";
 
@@ -26,6 +26,7 @@ interface SaveData extends WorldSaveState {
   inventory: ReturnType<typeof getInventory>;
   starterSpeciesId: number;
   gold: number;
+  flags?: Flags;     // absent in saves from before bosses existed
   quests?: QuestLog; // absent in saves from before quests existed
 }
 
@@ -37,6 +38,7 @@ export async function saveGame(game: Phaser.Game, world: WorldSaveState): Promis
     starterSpeciesId: (game.registry.get("starterSpeciesId") as number | undefined) ?? 4,
     gold: getGold(game),
     quests: getQuestLog(game),
+    flags: getFlags(game),
     ...world,
   };
   await Preferences.set({ key: SAVE_KEY, value: JSON.stringify(data) });
@@ -66,6 +68,7 @@ export function applySaveToRegistry(game: Phaser.Game, data: SaveData): WorldSav
   setInventory(game, data.inventory);
   setGold(game, data.gold);
   setQuestLog(game, data.quests ?? {});
+  setFlags(game, data.flags ?? {});
   game.registry.set("starterSpeciesId", data.starterSpeciesId);
   return { zoneId: data.zoneId, tileX: data.tileX, tileY: data.tileY, direction: data.direction };
 }

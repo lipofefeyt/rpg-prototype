@@ -4,6 +4,8 @@ import { TILE_SIZE, ANIM_BASE, MS_PER_GAME_MINUTE, TILE_GRASS, TILE_PATH, TILE_T
 import { ZONES, type ZoneDef, type NpcDef } from "@/data/zones";
 import type { BattleInitData } from "@/scenes/BattleScene";
 import { SCRIPTS } from "@/data/scripts";
+import { BOSSES, bossFlag } from "@/data/bosses";
+import { hasFlag } from "@/systems/playerState";
 import { getTouchState, type TouchState } from "@/systems/touchInput";
 import { autosave, type WorldSaveState } from "@/systems/saveLoad";
 import {
@@ -51,6 +53,7 @@ export class WorldScene extends Phaser.Scene {
   private menuKeys: Phaser.Input.Keyboard.Key[] = [];
   private pendingShop = false;
   private questMarkers: Phaser.GameObjects.Text[] = [];
+  private pendingBoss: string | null = null;
   private touch!: TouchState;
 
   private tilemap!: Phaser.Tilemaps.Tilemap;
@@ -131,10 +134,11 @@ export class WorldScene extends Phaser.Scene {
       this.dialogueLocked = false;
       this.requireZRelease = true; // won't re-arm until player releases Z
       this.refreshQuestMarkers();
+      if (this.pendingBoss) { const id = this.pendingBoss; this.pendingBoss = null; this.startBossBattle(id); return; }
       if (this.pendingShop) { this.pendingShop = false; this.openMenu("shop"); }
     }, this);
     // Returning from the menu: don't let the Z/X that closed it trigger an interaction.
-    this.events.on(Phaser.Scenes.Events.RESUME, () => { this.requireZRelease = true; this.refreshQuestMarkers(); });
+    this.events.on(Phaser.Scenes.Events.RESUME, () => { this.requireZRelease = true; this.refreshQuestMarkers(); this.refreshBosses(); });
 
     this.scene.launch("UIScene");
 
@@ -237,7 +241,40 @@ export class WorldScene extends Phaser.Scene {
 
   // ── NPC ───────────────────────────────────────────────────────────────────
 
+  /** A boss NPC disappears once its fight has been won. */
+  private isNpcActive(def: NpcDef): boolean {
+    return !def.boss || !hasFlag(this.game, bossFlag(def.boss));
+  }
+
+  private refreshBosses(): void {
+    this.currentZone.npcs.forEach((def, i) => {
+      if (def.boss) this.activeNpcs[i]?.setVisible(this.isNpcActive(def));
+    });
+  }
+
+  private startBossBattle(bossId: string): void {
+    const initData: BattleInitData = {
+      wildSpeciesId: BOSSES[bossId].speciesId,
+      wildLevel: BOSSES[bossId].level,
+      zoneId: this.currentZone.id,
+      bossId,
+    };
+    this.scene.pause("UIScene");
+    this.scene.launch("BattleScene", initData);
+    this.scene.pause();
+  }
+
   private spawnNpc(def: NpcDef): Phaser.GameObjects.Sprite {
+    if (def.boss) {
+      // Bosses reuse their battle art, scaled down to a 2-tile-tall presence in the world.
+      const boss = this.add.sprite(
+        def.tileX * TILE_SIZE + TILE_SIZE / 2,
+        def.tileY * TILE_SIZE + TILE_SIZE,
+        `creature-front-${BOSSES[def.boss].speciesId}`,
+      ).setScale(0.5).setOrigin(0.5, 0.9).setDepth(1);
+      boss.setVisible(this.isNpcActive(def));
+      return boss;
+    }
     const spriteKey = `npc-${def.id}`;
     const key = this.textures.exists(spriteKey) ? spriteKey : "player";
     const spr = this.add.sprite(
@@ -269,6 +306,8 @@ export class WorldScene extends Phaser.Scene {
   private isWalkable(tx: number, ty: number): boolean {
     const tile = this.groundLayer.getTileAt(tx, ty);
     if (!tile) return false;
+    // Undefeated bosses are solid (regular NPCs are not).
+    if (this.currentZone.npcs.some(n => n.boss && this.isNpcActive(n) && n.tileX === tx && n.tileY === ty)) return false;
     return tile.index === TILE_GRASS || tile.index === TILE_PATH
         || tile.index === TILE_TALLGRASS || tile.index === TILE_CAVE_FLOOR;
   }
@@ -312,7 +351,12 @@ export class WorldScene extends Phaser.Scene {
     const ty = this.tileY + dy;
 
     // Check NPCs
-    const npc = this.currentZone.npcs.find(n => n.tileX === tx && n.tileY === ty);
+    const npc = this.currentZone.npcs.find(n => n.tileX === tx && n.tileY === ty && this.isNpcActive(n));
+    if (npc?.boss) {
+      this.pendingBoss = npc.boss;
+      this.showDialogue(SCRIPTS[npc.scriptId] ?? [`[Missing script: ${npc.scriptId}]`], npc.name);
+      return;
+    }
     if (npc) {
       const quest = pickNpcQuest(this.game, npc.questIds);
       if (quest) {

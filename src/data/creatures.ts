@@ -1,5 +1,6 @@
 import type { CreatureType } from "@/types";
 import { MOVES } from "@/data/moves";
+import type { BossDef } from "@/data/bosses";
 import { totalBonus, type EquipLoadout } from "@/data/equipment";
 
 export type { CreatureType };
@@ -116,6 +117,12 @@ export const SPECIES: Record<number, CreatureSpecies> = {
     catchRate: 190, baseExp: 62,
     learnset: [[1,"lick"],[1,"hypnosis"],[8,"spite"],[12,"mean_look"],[18,"shadow_ball"]],
   },
+  200: {
+    id: 200, name: "Cavern Warden", types: ["dark"],
+    baseStats: { hp: 70, atk: 90, def: 70, spAtk: 60, spDef: 60, speed: 40 },
+    catchRate: 0, baseExp: 150,
+    learnset: [[1,"rock_throw"],[1,"growl"],[5,"bite"],[8,"magnitude"],[10,"rock_slide"]],
+  },
   129: {
     id: 129, name: "River Carp", types: ["water"],
     baseStats: { hp: 20, atk: 10, def: 55, spAtk: 15, spDef: 20, speed: 80 },
@@ -213,6 +220,17 @@ export function makeBattleCreature(speciesId: number, level: number): BattleCrea
     exp: expForLevel(level),
     equipment: {},
   };
+}
+
+/** A boss-strength creature: the species scaled by the boss's HP / attack multipliers. Can't be tamed. */
+export function makeBoss(def: BossDef): BattleCreature {
+  const c = makeBattleCreature(def.speciesId, def.level);
+  c.maxHp = Math.round(c.maxHp * def.hpMult);
+  c.currentHp = c.maxHp;
+  c.atk = Math.round(c.atk * def.atkMult);
+  c.spAtk = Math.round(c.spAtk * def.atkMult);
+  c.catchRate = 0;
+  return c;
 }
 
 /**

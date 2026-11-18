@@ -1,12 +1,13 @@
 import Phaser from "phaser";
 import { anchor, playEntrance, playSendIn, playAttack, playBuff, playHit, playFaint, playTamed, playWobble } from "@/gfx/spriteAnim";
-import { recordDefeat, recordTame } from "@/systems/quests";
+import { recordBoss, recordDefeat, recordTame } from "@/systems/quests";
+import { BOSSES, bossFlag, type BossDef } from "@/data/bosses";
 import { EQUIPMENT, goldReward, rollGearDrop } from "@/data/equipment";
-import { makeBattleCreature, gainExp, SPECIES, type BattleCreature, type StatusCondition } from "@/data/creatures";
+import { makeBoss, makeBattleCreature, gainExp, SPECIES, type BattleCreature, type StatusCondition } from "@/data/creatures";
 import { MOVES, type MoveDef } from "@/data/moves";
 import { getTotalEffect } from "@/data/typeChart";
 import { ITEMS } from "@/data/items";
-import { MAX_PARTY_SIZE, addGold, addToInventory, getParty, setParty, getInventory, setInventory } from "@/systems/playerState";
+import { MAX_PARTY_SIZE, blackout, setFlag, addGold, addToInventory, getParty, setParty, getInventory, setInventory } from "@/systems/playerState";
 import { autosave } from "@/systems/saveLoad";
 import type { WorldScene } from "@/scenes/WorldScene";
 
@@ -27,6 +28,8 @@ const BTN_COLS = [4, 242];
 export interface BattleInitData {
   wildSpeciesId: number;
   wildLevel: number;
+  /** Set for boss fights: no fleeing or taming, scaled stats, enrage phase. */
+  bossId?: string;
   zoneId: string;
 }
 
@@ -64,6 +67,8 @@ const STATUS_APPLIED_MSG: Record<StatusCondition, (name: string) => string> = {
 export class BattleScene extends Phaser.Scene {
   private battleInit!: BattleInitData;
   private wild!: BattleCreature;
+  private boss?: BossDef;
+  private enraged = false;
 
   private party!: BattleCreature[];
   private activeIndex = 0;
@@ -115,8 +120,10 @@ export class BattleScene extends Phaser.Scene {
     // on the same reused Scene instance each time, but this listener only fires once.
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
 
-    const { wildSpeciesId, wildLevel, zoneId } = this.battleInit;
-    this.wild = makeBattleCreature(wildSpeciesId, wildLevel);
+    const { wildSpeciesId, wildLevel, zoneId, bossId } = this.battleInit;
+    this.boss = bossId ? BOSSES[bossId] : undefined;
+    this.enraged = false;
+    this.wild = this.boss ? makeBoss(this.boss) : makeBattleCreature(wildSpeciesId, wildLevel);
 
     this.party = getParty(this.game);
     if (this.party.length === 0) {
@@ -146,6 +153,7 @@ export class BattleScene extends Phaser.Scene {
     this.pcSprite = this.add
       .image(PLYR_X, PLYR_Y, `creature-back-${this.pc.speciesId}`)
       .setOrigin(0.5, 1);
+    if (this.boss) this.wildSprite.setScale(1.35);
     anchor(this.wildSprite);
     anchor(this.pcSprite);
     playEntrance(this, this.wildSprite, 1);
@@ -205,7 +213,7 @@ export class BattleScene extends Phaser.Scene {
 
     // Intro
     this.hideActionButtons();
-    this.showMsg(`A wild ${this.wild.name} lunges at you!`, () =>
+    this.showMsg(this.boss ? this.boss.intro : `A wild ${this.wild.name} lunges at you!`, () =>
       this.showMsg(`Forward, ${this.pc.name}!`, () => this.enterMenu()),
     );
   }
@@ -263,6 +271,7 @@ export class BattleScene extends Phaser.Scene {
       case 2: this.enterPartySelect(false); break;
       case 3:
         this.hideActionButtons();
+        if (this.boss) { this.showMsg(`There is no escape from the ${this.wild.name}!`, () => this.enterMenu()); break; }
         this.showMsg("Got away safely!", () => this.exitBattle());
         break;
     }
@@ -368,6 +377,10 @@ export class BattleScene extends Phaser.Scene {
     const item = ITEMS[id];
 
     if (item.kind === "capture") {
+      if (this.boss) {
+        this.showMsg(`The ${this.wild.name} cannot be tamed!`, () => { this.state = "item-select"; });
+        return;
+      }
       this.hideGrid();
       this.consumeItem(id);
       this.doBallThrow();
@@ -429,7 +442,7 @@ export class BattleScene extends Phaser.Scene {
 
   private executeTurn(playerMoveIdx: number) {
     const pSlot = this.pc.moves[playerMoveIdx];
-    const eSlot = this.wild.moves[Math.floor(Math.random() * this.wild.moves.length)];
+    const eSlot = this.pickEnemyMove();
     pSlot.pp = Math.max(0, pSlot.pp - 1);
 
     const pPrio = MOVES[pSlot.moveId]?.priority ?? 0;
@@ -440,7 +453,7 @@ export class BattleScene extends Phaser.Scene {
       this.takeTurn(this.pc, this.wild, this.wildSprite, pSlot.moveId, () => {
         this.updateWildHp();
         if (this.wild.currentHp <= 0) { this.onWildFaint(); return; }
-        next();
+        this.checkEnrage(next);
       });
 
     const doEnemyAction = (next: () => void) =>
@@ -452,6 +465,30 @@ export class BattleScene extends Phaser.Scene {
 
     if (playerFirst) doPlayerAction(() => doEnemyAction(() => this.endOfTurn()));
     else              doEnemyAction(() => doPlayerAction(() => this.endOfTurn()));
+  }
+
+  /** Wild monsters pick at random; bosses usually pick their best-scoring damaging move. */
+  private pickEnemyMove() {
+    const moves = this.wild.moves;
+    if (this.boss && Math.random() < 0.65) {
+      const score = (id: string) => {
+        const m = MOVES[id];
+        if (!m || m.power === 0) return 0;
+        return m.power * getTotalEffect(m.type, this.pc.types) * (this.wild.types.includes(m.type) ? 1.5 : 1);
+      };
+      return moves.reduce((best, s) => (score(s.moveId) > score(best.moveId) ? s : best), moves[0]);
+    }
+    return moves[Math.floor(Math.random() * moves.length)];
+  }
+
+  /** Boss phase change: once worn down it flares up and hits harder for the rest of the fight. */
+  private checkEnrage(next: () => void) {
+    const boss = this.boss;
+    if (!boss || this.enraged || this.wild.currentHp > this.wild.maxHp * boss.enrageAt) { next(); return; }
+    this.enraged = true;
+    this.wild.atk = Math.round(this.wild.atk * boss.enrageMult);
+    this.wild.spAtk = Math.round(this.wild.spAtk * boss.enrageMult);
+    playBuff(this, this.wildSprite, 0xff3030, () => this.showMsg(boss.enrageMsg, next));
   }
 
   /** Applies sleep/freeze/paralysis action-prevention before handing off to doAttack(). */
@@ -582,12 +619,38 @@ export class BattleScene extends Phaser.Scene {
       this.showMsg(`${this.pc.name} is knocked out!`, () => {
         const hasReserve = this.party.some((c, i) => i !== this.activeIndex && c.currentHp > 0);
         if (hasReserve) this.enterPartySelect(true);
-        else this.showMsg("Your party has fallen!", () => this.exitBattle());
+        else this.showMsg("Your party has fallen!", () => {
+        const lost = blackout(this.game);
+        this.showMsg(
+          lost > 0 ? `You come to, healed but ${lost} gold poorer.` : "You come to, healed and ready to try again.",
+          () => this.exitBattle(),
+        );
+      });
+      });
+    });
+  }
+
+  private onBossFaint(boss: BossDef) {
+    playFaint(this, this.wildSprite, () => {
+      this.showMsg(boss.defeatMsg, () => {
+        const levelMsgs = gainExp(this.pc, boss.rewardExp);
+        this.refreshPcHpPanel();
+        addGold(this.game, boss.rewardGold);
+        const gear = boss.rewardGear[Math.floor(Math.random() * boss.rewardGear.length)];
+        addToInventory(this.game, gear);
+        setFlag(this.game, bossFlag(boss.id));
+        const questMsgs = recordBoss(this.game, boss.id);
+        this.showMsg(`${this.pc.name} gained ${boss.rewardExp} Exp!`, () =>
+          this.showSequential(
+            [...levelMsgs, `Found ${boss.rewardGold} gold!`, `Obtained ${EQUIPMENT[gear].name}!`, ...questMsgs],
+            () => this.exitBattle(),
+          ));
       });
     });
   }
 
   private onWildFaint() {
+    if (this.boss) { this.onBossFaint(this.boss); return; }
     playFaint(this, this.wildSprite, () => {
       this.showMsg(`The wild ${this.wild.name} is defeated!`, () => {
         const sp = SPECIES[this.wild.speciesId];
