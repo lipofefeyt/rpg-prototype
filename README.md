@@ -24,10 +24,11 @@ The Android project lives in `android/` (app id `com.example.rpgprototype`, name
 
 1. `npm install` once in the repo root, then `npx cap sync android` (creates the generated Capacitor files).
 2. In Android Studio use *File > Open* and choose the **`android`** folder (not the repo root);
-   `open-in-android-studio.bat` does the same. **Set *Settings > Build > Tools > Gradle > Gradle JDK*
-   to a Java 21 JBR** (pick `jbr-21`, or *Download JDK...* > JetBrains Runtime 21). Studio's default
-   JDK is Java 25, which Gradle 8.14 rejects ("Incompatible Gradle JVM version"); the sync then fails
-   silently into a half-set-up project and no Android run configuration can be created.
+   `open-in-android-studio.bat` does the same. The project is set up for a Java 21 JBR (`jbr-21`),
+   and the Gradle JDK (*Settings > Build > Tools > Gradle > Gradle JDK*) must be Java 17 or newer
+   for Gradle 9.6 / Android Gradle Plugin 9. If the sync fails with "Incompatible Gradle JVM
+   version", pick `jbr-21` there (or *Download JDK...* > JetBrains Runtime 21). A failed sync
+   leaves a half-set-up project in which no Android run configuration is available.
 3. Let Gradle sync, pick your phone in the device picker.
 4. Run **Emberhold (S25)**. Debug builds rebuild the web bundle first (`npm run build:s25`), so you
    always get the current game code. Pass `-PskipWebBuild=true` to skip that (e.g. for live reload).
