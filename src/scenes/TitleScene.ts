@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { fillPanel, strokePanel, cut } from "@/gfx/panel";
+import { drawPanel } from "@/gfx/panel";
 import { BASE_WIDTH, GAME_HEIGHT, centerFixedLayout, attachFpsOverlay } from "@/config";
 import { applySaveToRegistry, type SaveData } from "@/systems/saveLoad";
 
@@ -135,10 +135,10 @@ export class TitleScene extends Phaser.Scene {
       const x = (W - BTN_W) / 2;
       const y = BTN_Y0 + i * BTN_GAP;
       const sel = i === this.selected;
-      this.gfx.fillStyle(sel ? 0x1a3a7a : 0x0d1a3a, 0.95);
-      fillPanel(this.gfx, x, y, BTN_W, BTN_H, cut(6));
-      this.gfx.fillStyle(sel ? 0x4488ff : 0x1e2f88, 1);
-      strokePanel(this.gfx, x, y, BTN_W, BTN_H, cut(6), 2);
+      drawPanel(this.gfx, x, y, BTN_W, BTN_H, {
+        cut: 3, fillAlpha: 0.97,
+        fill: sel ? 0x1a3a7a : 0x0d1a3a, border: sel ? 0x5a98ff : 0x24389a,
+      });
     });
   }
 

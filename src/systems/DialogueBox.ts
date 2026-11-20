@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { fillPanel, strokePanel, cut } from "@/gfx/panel";
+import { drawPanel } from "@/gfx/panel";
 import { BASE_WIDTH, SAFE_INSET_X, LOGICAL_W, LOGICAL_H } from "@/config";
 
 const PAD           = 10;
@@ -37,10 +37,7 @@ export class DialogueBox {
     // ── Speaker name panel ───────────────────────────────────────────────────
     const spY = boxY - SPEAKER_H - SPEAKER_GAP;
     this.speakerPanel = scene.add.graphics();
-    this.speakerPanel.fillStyle(0x08081a, 0.95);
-    fillPanel(this.speakerPanel, boxX, spY, 90, SPEAKER_H, cut(3));
-    this.speakerPanel.fillStyle(0x4488ff, 1);
-    strokePanel(this.speakerPanel, boxX, spY, 90, SPEAKER_H, cut(3), 2);
+    drawPanel(this.speakerPanel, boxX, spY, 90, SPEAKER_H, { cut: 2, fill: 0x08081a, fillAlpha: 0.96, border: 0x4a7ee0 });
 
     this.speakerLabel = scene.add.text(boxX + 7, spY + 4, "", {
       fontSize: "10px",
@@ -51,13 +48,7 @@ export class DialogueBox {
 
     // ── Main dialogue panel ──────────────────────────────────────────────────
     this.panel = scene.add.graphics();
-    this.panel.fillStyle(0x08081a, 0.93);
-    fillPanel(this.panel, boxX, boxY, boxW, BOX_H, cut(4));
-    this.panel.fillStyle(0x4488ff, 1);
-    strokePanel(this.panel, boxX, boxY, boxW, BOX_H, cut(4), 2);
-    // Inner glow line (subtle highlight at top)
-    this.panel.fillStyle(0x6699ff, 0.35);
-    strokePanel(this.panel, boxX + 3, boxY + 3, boxW - 6, BOX_H - 6, cut(3), 1);
+    drawPanel(this.panel, boxX, boxY, boxW, BOX_H, { cut: 2, fill: 0x08081a, fillAlpha: 0.95, border: 0x4a7ee0 });
 
     this.textObj = scene.add.text(boxX + PAD, boxY + PAD, "", {
       fontSize: "11px",

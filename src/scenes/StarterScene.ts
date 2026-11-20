@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { makeBattleCreature } from "@/data/creatures";
 import type { CreatureType } from "@/types";
 import { TYPE_LABELS } from "@/data/typeLabels";
-import { fillPanel, strokePanel, cut } from "@/gfx/panel";
+import { drawPanel } from "@/gfx/panel";
 import { getInventory, setParty, equipItem } from "@/systems/playerState";
 import { BASE_WIDTH, GAME_HEIGHT, SPRITE_SCALE, centerFixedLayout } from "@/config";
 
@@ -104,10 +104,7 @@ export class StarterScene extends Phaser.Scene {
 
     // Card panel behind starters
     const card = this.add.graphics();
-    card.fillStyle(0x0c1030, 0.7);
-    fillPanel(card, 34, 60, W - 68, 170, cut(8));
-    card.fillStyle(0x1e2f88, 0.55);
-    strokePanel(card, 34, 60, W - 68, 170, cut(8), 1);
+    drawPanel(card, 34, 60, W - 68, 170, { cut: 4, fill: 0x0c1030, fillAlpha: 0.78, border: 0x24389a, borderWidth: 1.5 });
 
     // Shadow ellipses under each sprite (grounding)
     const shadowGfx = this.add.graphics();
@@ -164,10 +161,7 @@ export class StarterScene extends Phaser.Scene {
         .setOrigin(0.5).setDepth(5);
     }
     const btn = this.add.graphics().setDepth(5);
-    btn.fillStyle(0x1a3a7a, 0.95);
-    fillPanel(btn, CHOOSE_X, CHOOSE_Y, CHOOSE_W, CHOOSE_H, cut(5));
-    btn.fillStyle(0x4488ff, 1);
-    strokePanel(btn, CHOOSE_X, CHOOSE_Y, CHOOSE_W, CHOOSE_H, cut(5), 1);
+    drawPanel(btn, CHOOSE_X, CHOOSE_Y, CHOOSE_W, CHOOSE_H, { cut: 3, fill: 0x1a3a7a, fillAlpha: 0.97, border: 0x5a98ff, borderWidth: 1.5 });
     this.chooseText = this.add.text(CHOOSE_X + CHOOSE_W / 2, CHOOSE_Y + CHOOSE_H / 2, "", {
       fontSize: "10px", color: "#ffffff", fontFamily: "monospace", fontStyle: "bold",
     }).setOrigin(0.5).setDepth(6);
@@ -246,10 +240,7 @@ export class StarterScene extends Phaser.Scene {
 
     // Highlight glow
     this.highlight.clear();
-    this.highlight.fillStyle(0x2244cc, 0.16);
-    fillPanel(this.highlight, hx - HL_W / 2, HL_TOP, HL_W, HL_H, cut(7));
-    this.highlight.fillStyle(0x4488ff, 0.88);
-    strokePanel(this.highlight, hx - HL_W / 2, HL_TOP, HL_W, HL_H, cut(7), 2);
+    drawPanel(this.highlight, hx - HL_W / 2, HL_TOP, HL_W, HL_H, { cut: 3, fill: 0x2244cc, fillAlpha: 0.16, border: 0x5a98ff, shadow: false });
 
     // Tween sprites: selected grows, others shrink + dim
     for (let i = 0; i < 3; i++) {

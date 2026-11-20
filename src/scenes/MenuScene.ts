@@ -9,7 +9,7 @@ import {
   addGold, addToInventory, equipItem, getGold, getInventory, getParty, healParty, innCost, partyNeedsRest, setInventory,
 } from "@/systems/playerState";
 import { autosave } from "@/systems/saveLoad";
-import { fillPanel, strokePanel, cut } from "@/gfx/panel";
+import { drawPanel } from "@/gfx/panel";
 import { QUESTS, QUEST_ORDER } from "@/data/quests";
 import { getQuestLog, progressText, rewardText } from "@/systems/quests";
 import type { WorldScene } from "@/scenes/WorldScene";
@@ -199,8 +199,7 @@ export class MenuScene extends Phaser.Scene {
     const g = this.gfx;
     g.clear();
     for (const [px, pw] of [[LIST_X, LIST_W], [INFO_X, INFO_W]] as [number, number][]) {
-      g.fillStyle(PANEL_FILL, 1);    fillPanel(g, px, LIST_Y, pw, 222, cut(6));
-      g.fillStyle(0x1e2f88, 0.8);    strokePanel(g, px, LIST_Y, pw, 222, cut(6), 1);
+      drawPanel(g, px, LIST_Y, pw, 222, { cut: 3, fill: PANEL_FILL, fillAlpha: 1, border: 0x24389a, borderWidth: 1.5 });
     }
 
     for (let i = 0; i < VISIBLE; i++) {
@@ -215,8 +214,7 @@ export class MenuScene extends Phaser.Scene {
       const y = LIST_Y + 4 + i * ROW_H;
       const sel = idx === f.cursor;
       if (sel) {
-        g.fillStyle(0x1a3a7a, 1); g.fillRect(LIST_X + 4, y, LIST_W - 8, ROW_H - 2);
-        g.lineStyle(1.5, 0x4488ff, 1); g.strokeRect(LIST_X + 4, y, LIST_W - 8, ROW_H - 2);
+        drawPanel(g, LIST_X + 4, y, LIST_W - 8, ROW_H - 2, { cut: 2, fill: 0x1a3a7a, fillAlpha: 1, border: 0x5a98ff, borderWidth: 1.5, shadow: false });
       }
       const on = row.enabled !== false;
       this.labels[i].setText(row.label).setColor(on ? "#e8eeff" : "#5a6482");

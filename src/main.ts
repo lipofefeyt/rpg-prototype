@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import "@fontsource/dotgothic16/latin-400.css";
 import { BootScene } from "@/scenes/BootScene";
 import { PreloadScene } from "@/scenes/PreloadScene";
 import { TitleScene } from "@/scenes/TitleScene";
@@ -30,4 +31,10 @@ const config: Phaser.Types.Core.GameConfig = {
   },
 };
 
-new Phaser.Game(config);
+// Canvas text is rendered once, so the pixel font must be loaded before the first scene draws.
+// Never block start-up on it for long: fall back to monospace after 2.5 s.
+const fontsReady = Promise.race([
+  document.fonts.load('400 12px "DotGothic16"'),
+  new Promise(resolve => setTimeout(resolve, 2500)),
+]).catch(() => undefined);
+fontsReady.then(() => new Phaser.Game(config));

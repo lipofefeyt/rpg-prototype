@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { anchor, playEntrance, playSendIn, playAttack, playBuff, playHit, playFaint, playTamed, playWobble } from "@/gfx/spriteAnim";
-import { fillPanel, strokePanel, cut } from "@/gfx/panel";
+import { drawPanel, drawHpBar } from "@/gfx/panel";
 import { recordBoss, recordDefeat, recordTame } from "@/systems/quests";
 import { BOSSES, bossFlag, type BossDef } from "@/data/bosses";
 import { EQUIPMENT, canEquip, classOf, goldReward, rollGearDrop } from "@/data/equipment";
@@ -22,7 +22,10 @@ const SKY_H   = 108;
 
 const WILD_X = 370, WILD_Y = 118; // keeps the 64px sprite clear of the player HP panel (top y=126)
 const PLYR_X =  90, PLYR_Y = 170;
-const HP_BAR_W = 155, HP_BAR_H = 6;
+const HP_BAR_W = 155, HP_BAR_H = 8;
+// HP bar top-left corners (the wild panel sits at 8,8 and the player's at 216,126; the bar is 26px in, 30px down, centred)
+const WILD_BAR_X = 8 + 26,   WILD_BAR_Y = 8 + 30 - HP_BAR_H / 2;
+const PC_BAR_X   = 216 + 26, PC_BAR_Y   = 126 + 30 - HP_BAR_H / 2;
 
 const BTN_W = 234, BTN_H = 30;
 const BTN_ROWS = [UI_Y + 66, UI_Y + 100];
@@ -90,8 +93,8 @@ export class BattleScene extends Phaser.Scene {
   private wildSprite!: Phaser.GameObjects.Image;
   private pcSprite!: Phaser.GameObjects.Image;
 
-  private wildHpFill!: Phaser.GameObjects.Rectangle;
-  private pcHpFill!: Phaser.GameObjects.Rectangle;
+  private wildHpFill!: Phaser.GameObjects.Graphics;
+  private pcHpFill!: Phaser.GameObjects.Graphics;
   private pcHpText!: Phaser.GameObjects.Text;
   private pcNameText!: Phaser.GameObjects.Text;
   private pcLevelText!: Phaser.GameObjects.Text;
@@ -371,10 +374,11 @@ export class BattleScene extends Phaser.Scene {
       const sel = i === this.cursor;
       const entry = this.gridEntries[i];
       const enabled = entry?.enabled ?? false;
-      this.gridGfx.fillStyle(sel ? 0x1a3a7a : (enabled ? 0x0d1a3a : 0x0a0a1a));
-      this.gridGfx.fillRect(x, y, BTN_W, BTN_H);
-      this.gridGfx.lineStyle(1.5, sel ? 0x4488ff : (enabled ? 0x1a2255 : 0x111111));
-      this.gridGfx.strokeRect(x, y, BTN_W, BTN_H);
+      drawPanel(this.gridGfx, x, y, BTN_W, BTN_H, {
+        cut: 2, borderWidth: 1.5, shadow: false, fillAlpha: 1,
+        fill: sel ? 0x1a3a7a : (enabled ? 0x0d1a3a : 0x0a0a1a),
+        border: sel ? 0x5a98ff : (enabled ? 0x233a80 : 0x1a1a28),
+      });
       if (entry?.typeColor !== undefined) {
         this.gridGfx.fillStyle(entry.typeColor);
         this.gridGfx.fillRect(x + BTN_W - 14, y + 5, 8, 8);
@@ -797,14 +801,12 @@ export class BattleScene extends Phaser.Scene {
 
   private updateWildHp() {
     const frac = Math.max(0, this.wild.currentHp / this.wild.maxHp);
-    this.wildHpFill.setSize(Math.max(1, Math.floor(HP_BAR_W * frac)), HP_BAR_H)
-      .setFillStyle(this.hpColor(frac));
+    drawHpBar(this.wildHpFill, WILD_BAR_X, WILD_BAR_Y, HP_BAR_W, HP_BAR_H, frac, this.hpColor(frac));
   }
 
   private updatePcHp() {
     const frac = Math.max(0, this.pc.currentHp / this.pc.maxHp);
-    this.pcHpFill.setSize(Math.max(1, Math.floor(HP_BAR_W * frac)), HP_BAR_H)
-      .setFillStyle(this.hpColor(frac));
+    drawHpBar(this.pcHpFill, PC_BAR_X, PC_BAR_Y, HP_BAR_W, HP_BAR_H, frac, this.hpColor(frac));
     this.pcHpText.setText(`${this.pc.currentHp}/${this.pc.maxHp}`);
   }
 
@@ -824,30 +826,28 @@ export class BattleScene extends Phaser.Scene {
   private buildWildHpPanel() {
     const [px, py, pw, ph] = [8, 8, 188, 50];
     const g = this.add.graphics();
-    g.fillStyle(0x0d1a2e, 0.88); fillPanel(g, px, py, pw, ph, cut(4));
-    g.fillStyle(0x1e3a6a, 1);    strokePanel(g, px, py, pw, ph, cut(4), 2);
+    drawPanel(g, px, py, pw, ph, { cut: 2, fill: 0x0d1a2e, fillAlpha: 0.9, border: 0x27498f });
 
     this.add.text(px + 8, py + 6, this.wild.name, { fontSize: "10px", color: "#e8eeff", fontFamily: "monospace" });
     this.add.text(px + pw - 8, py + 6, `Lv.${this.wild.level}`, {
       fontSize: "10px", color: "#aaccff", fontFamily: "monospace" }).setOrigin(1, 0);
     this.add.text(px + 8, py + 26, "HP", { fontSize: "9px", color: "#ffdd44", fontFamily: "monospace" });
-    this.add.rectangle(px + 26, py + 30, HP_BAR_W, HP_BAR_H, 0x1a1a2a).setOrigin(0, 0.5);
-    this.wildHpFill = this.add.rectangle(px + 26, py + 30, HP_BAR_W, HP_BAR_H, 0x44dd44).setOrigin(0, 0.5);
+    this.wildHpFill = this.add.graphics();
+    drawHpBar(this.wildHpFill, WILD_BAR_X, WILD_BAR_Y, HP_BAR_W, HP_BAR_H, 1, this.hpColor(1));
   }
 
   private buildPcHpPanel() {
     const [px, py, pw, ph] = [216, 126, 256, 50];
     const g = this.add.graphics();
-    g.fillStyle(0x0d1a2e, 0.88); fillPanel(g, px, py, pw, ph, cut(4));
-    g.fillStyle(0x1e3a6a, 1);    strokePanel(g, px, py, pw, ph, cut(4), 2);
+    drawPanel(g, px, py, pw, ph, { cut: 2, fill: 0x0d1a2e, fillAlpha: 0.9, border: 0x27498f });
 
     this.pcNameText = this.add.text(px + 8, py + 6, this.pc.name, { fontSize: "10px", color: "#e8eeff", fontFamily: "monospace" });
     this.pcLevelText = this.add.text(px + pw - 8, py + 6, `Lv.${this.pc.level}`, {
       fontSize: "10px", color: "#aaccff", fontFamily: "monospace" }).setOrigin(1, 0);
     this.add.text(px + 8, py + 26, "HP", { fontSize: "9px", color: "#ffdd44", fontFamily: "monospace" });
-    this.add.rectangle(px + 26, py + 30, HP_BAR_W, HP_BAR_H, 0x1a1a2a).setOrigin(0, 0.5);
-    this.pcHpFill = this.add.rectangle(px + 26, py + 30, HP_BAR_W, HP_BAR_H, 0x44dd44).setOrigin(0, 0.5);
-    this.pcHpText = this.add.text(px + pw - 8, py + 40, `${this.pc.maxHp}/${this.pc.maxHp}`, {
+    this.pcHpFill = this.add.graphics();
+    drawHpBar(this.pcHpFill, PC_BAR_X, PC_BAR_Y, HP_BAR_W, HP_BAR_H, 1, this.hpColor(1));
+    this.pcHpText = this.add.text(px + pw - 8, py + 34, `${this.pc.maxHp}/${this.pc.maxHp}`, {
       fontSize: "9px", color: "#99bbdd", fontFamily: "monospace" }).setOrigin(1, 0);
   }
 
@@ -870,10 +870,10 @@ export class BattleScene extends Phaser.Scene {
       const r = Math.floor(i / 2), c = i % 2;
       const [x, y] = [BTN_COLS[c], BTN_ROWS[r]];
       const sel = i === this.cursor;
-      this.btnGfx.fillStyle(sel ? 0x1a3a7a : 0x0d1a3a);
-      this.btnGfx.fillRect(x, y, BTN_W, BTN_H);
-      this.btnGfx.lineStyle(1.5, sel ? 0x4488ff : 0x1a2255);
-      this.btnGfx.strokeRect(x, y, BTN_W, BTN_H);
+      drawPanel(this.btnGfx, x, y, BTN_W, BTN_H, {
+        cut: 2, borderWidth: 1.5, shadow: false, fillAlpha: 1,
+        fill: sel ? 0x1a3a7a : 0x0d1a3a, border: sel ? 0x5a98ff : 0x233a80,
+      });
     }
   }
 
