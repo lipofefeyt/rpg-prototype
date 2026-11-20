@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { type Direction } from "@/types";
 import { TILE_SIZE, ANIM_BASE, MS_PER_GAME_MINUTE, TILE_GRASS, TILE_PATH, TILE_TALLGRASS, TILE_CAVE_FLOOR } from "@/constants";
-import { ENCOUNTER_RATE_MULT, attachFpsOverlay } from "@/config";
+import { ENCOUNTER_RATE_MULT, attachFpsOverlay, applyScreenScale, CANVAS_W, CANVAS_H } from "@/config";
 import { ZONES, type ZoneDef, type NpcDef } from "@/data/zones";
 import type { BattleInitData } from "@/scenes/BattleScene";
 import { SCRIPTS } from "@/data/scripts";
@@ -103,6 +103,8 @@ export class WorldScene extends Phaser.Scene {
     this.refreshQuestMarkers();
 
     // ── Camera ──────────────────────────────────────────────────────────────
+    // Default (centre) origin: startFollow / setBounds assume it. Zoom is about the screen centre.
+    applyScreenScale(this, false);
     this.cameras.main.startFollow(this.player, true);
     this.cameras.main.setDeadzone(TILE_SIZE / 2, TILE_SIZE / 2);
 
@@ -124,10 +126,10 @@ export class WorldScene extends Phaser.Scene {
     this.player.play(`idle-${this.direction}`);
 
     // ── Day/night overlay (fixed to screen, depth above world but below UI) ──
-    const { width: W, height: H } = this.scale;
+    // Zoom is about the canvas centre, so a scrollFactor-0 object centred on the canvas centre
+    // stays put and covers the whole screen.
     this.dayNightOverlay = this.add
-      .rectangle(0, 0, W, H, 0x000033, 0)
-      .setOrigin(0, 0)
+      .rectangle(CANVAS_W / 2, CANVAS_H / 2, CANVAS_W, CANVAS_H, 0x000033, 0)
       .setScrollFactor(0)
       .setDepth(10);
 

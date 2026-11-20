@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { loadGame } from "@/systems/saveLoad";
+import { applyScreenScale, LOGICAL_W, LOGICAL_H } from "@/config";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -7,7 +8,8 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload() {
-    const { width: W, height: H } = this.scale;
+    applyScreenScale(this);
+    const W = LOGICAL_W, H = LOGICAL_H;
 
     // ── Loading screen ───────────────────────────────────────────────────────
     this.add.rectangle(W / 2, H / 2, W, H, 0x0d0d1a);

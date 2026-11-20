@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { DialogueBox } from "@/systems/DialogueBox";
 import { TouchControls } from "@/systems/TouchControls";
 import { getTouchState } from "@/systems/touchInput";
+import { applyScreenScale } from "@/config";
 
 export class UIScene extends Phaser.Scene {
   private dialogueBox!: DialogueBox;
@@ -14,6 +15,7 @@ export class UIScene extends Phaser.Scene {
   }
 
   create() {
+    applyScreenScale(this); // overlay positions are logical px; the camera zooms them to device pixels
     this.dialogueBox = new DialogueBox(this);
     this.touchControls = new TouchControls(this, getTouchState(this.game));
     this.confirmKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Z);

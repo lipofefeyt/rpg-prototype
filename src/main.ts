@@ -7,12 +7,15 @@ import { WorldScene } from "@/scenes/WorldScene";
 import { BattleScene } from "@/scenes/BattleScene";
 import { UIScene } from "@/scenes/UIScene";
 import { MenuScene } from "@/scenes/MenuScene";
-import { GAME_HEIGHT, computeGameWidth } from "@/config";
+import { CANVAS_W, CANVAS_H } from "@/config";
+import { installCrispText } from "@/gfx/crispText";
+
+installCrispText();
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  width: computeGameWidth(),
-  height: GAME_HEIGHT,
+  width: CANVAS_W,   // device pixels; scenes zoom their cameras by SCREEN_K (see config.ts)
+  height: CANVAS_H,
   pixelArt: true,
   input: { activePointers: 3 }, // d-pad + A (+ spare) can be held at once on touch screens
   scale: {

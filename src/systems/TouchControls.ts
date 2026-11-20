@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import type { TouchState } from "@/systems/touchInput";
-import { BASE_WIDTH, SAFE_INSET_X } from "@/config";
+import { BASE_WIDTH, SAFE_INSET_X, LOGICAL_W, LOGICAL_H } from "@/config";
 
 const PANEL_FILL   = 0x08081a;
 const PANEL_ALPHA  = 0.55;
@@ -21,15 +21,15 @@ export class TouchControls {
   private readonly labels: Phaser.GameObjects.Text[] = [];
 
   constructor(scene: Phaser.Scene, state: TouchState) {
-    const W = scene.scale.width;
-    const H = scene.scale.height;
+    const W = LOGICAL_W;
+    const H = LOGICAL_H;
     const depth = 90; // below DialogueBox (100), above the world
 
     // On wide screens (phones) keep the controls clear of the camera cutout / rounded corners.
     const edge = W > BASE_WIDTH ? SAFE_INSET_X : 10;
     const btn = 28;
     const cx = edge + btn * 1.5 + 2; // d-pad center x (left button starts at the edge inset)
-    const cy = H - 10 - btn - 2; // d-pad center y
+    const cy = H - 12 - btn * 1.5 - 2; // d-pad center y (keeps the bottom button 12px above the screen edge)
 
     const dirSpecs: { dir: keyof Pick<TouchState, "up" | "down" | "left" | "right">; x: number; y: number; label: string }[] = [
       { dir: "up",    x: cx,          y: cy - btn - 2, label: "▲" },

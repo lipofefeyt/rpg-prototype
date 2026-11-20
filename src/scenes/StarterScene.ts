@@ -4,7 +4,7 @@ import type { CreatureType } from "@/types";
 import { TYPE_LABELS } from "@/data/typeLabels";
 import { fillPanel, strokePanel, cut } from "@/gfx/panel";
 import { getInventory, setParty, equipItem } from "@/systems/playerState";
-import { BASE_WIDTH, centerFixedLayout } from "@/config";
+import { BASE_WIDTH, GAME_HEIGHT, centerFixedLayout } from "@/config";
 
 const TYPE_COLORS: Record<CreatureType, string> = {
   grass:    "#4cbb5c", poison:   "#8040c0", fire:     "#e84a35",
@@ -80,7 +80,7 @@ export class StarterScene extends Phaser.Scene {
   create() {
     centerFixedLayout(this);
     const W = BASE_WIDTH;         // 480 (scene is centred in wider canvases)
-    const H = this.scale.height;  // 320
+    const H = GAME_HEIGHT;        // 320
 
     // ── Background ───────────────────────────────────────────────────────────
     this.add.rectangle(-1000, 0, W + 2000, H, 0x08091a).setOrigin(0);

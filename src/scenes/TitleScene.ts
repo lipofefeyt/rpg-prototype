@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { fillPanel, strokePanel, cut } from "@/gfx/panel";
-import { BASE_WIDTH, centerFixedLayout, attachFpsOverlay } from "@/config";
+import { BASE_WIDTH, GAME_HEIGHT, centerFixedLayout, attachFpsOverlay } from "@/config";
 import { applySaveToRegistry, type SaveData } from "@/systems/saveLoad";
 
 interface TitleOption {
@@ -35,11 +35,11 @@ export class TitleScene extends Phaser.Scene {
     this.leaving = false;
     centerFixedLayout(this);
     const W = BASE_WIDTH;
-    const H = this.scale.height;
+    const H = GAME_HEIGHT;
     const save = this.game.registry.get("pendingSave") as SaveData | undefined;
 
     // ── Background ───────────────────────────────────────────────────────────
-    this.add.rectangle(-1000, 0, W + 2000, H, 0x08091a).setOrigin(0);
+    this.add.rectangle(-1000, -1000, W + 2000, H + 2000, 0x08091a).setOrigin(0);
     const stars = this.add.graphics();
     stars.fillStyle(0xffffff, 0.5);
     for (const [x, y] of [
@@ -49,7 +49,7 @@ export class TitleScene extends Phaser.Scene {
     ]) stars.fillRect(x, y, 1, 1);
     const ground = this.add.graphics();
     ground.fillStyle(0x0f1238, 1);
-    ground.fillRect(-1000, H - 30, W + 2000, 30);
+    ground.fillRect(-1000, H - 30, W + 2000, 1030);
 
     // Drifting embers
     for (let i = 0; i < 14; i++) {
