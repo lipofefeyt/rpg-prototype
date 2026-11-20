@@ -5,6 +5,7 @@ import { ENCOUNTER_RATE_MULT, attachFpsOverlay, applyScreenScale, CANVAS_W, CANV
 import { ZONES, type ZoneDef, type NpcDef } from "@/data/zones";
 import type { BattleInitData } from "@/scenes/BattleScene";
 import { SCRIPTS } from "@/data/scripts";
+import { createGroundImages } from "@/gfx/groundArt";
 import { BOSSES, bossFlag } from "@/data/bosses";
 import { hasFlag } from "@/systems/playerState";
 import { getTouchState, type TouchState } from "@/systems/touchInput";
@@ -60,6 +61,7 @@ export class WorldScene extends Phaser.Scene {
 
   private tilemap!: Phaser.Tilemaps.Tilemap;
   private groundLayer!: Phaser.Tilemaps.TilemapLayer;
+  private groundImages: Phaser.GameObjects.Image[] = [];
   private activeNpcs: Phaser.GameObjects.Sprite[] = [];
   private currentZone!: ZoneDef;
   private dayNightOverlay!: Phaser.GameObjects.Rectangle;
@@ -193,6 +195,8 @@ export class WorldScene extends Phaser.Scene {
 
     // Tear down previous zone
     if (this.tilemap) this.tilemap.destroy();
+    for (const img of this.groundImages) img.destroy();
+    this.groundImages = [];
     for (const npc of this.activeNpcs) npc.destroy();
     this.activeNpcs = [];
     for (const m of this.questMarkers) m.destroy();
@@ -207,6 +211,10 @@ export class WorldScene extends Phaser.Scene {
     const tileset = this.tilemap.addTilesetImage("tileset");
     if (!tileset) throw new Error("Tileset not found");
     this.groundLayer = this.tilemap.createLayer(0, tileset, 0, 0)!;
+    // The tilemap stays as the logic layer (walkability, encounters via getTileAt) but the ground
+    // is drawn from the painted images instead (gfx/groundArt.ts).
+    this.groundLayer.setVisible(false);
+    this.groundImages = createGroundImages(this, zone.id, zone.mapData);
 
     // Camera bounds
     this.cameras.main.setBounds(
