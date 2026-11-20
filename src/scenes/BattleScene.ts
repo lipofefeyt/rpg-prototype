@@ -11,7 +11,7 @@ import { ITEMS } from "@/data/items";
 import { MAX_PARTY_SIZE, blackout, setFlag, addGold, addToInventory, getParty, setParty, getInventory, setInventory } from "@/systems/playerState";
 import { autosave } from "@/systems/saveLoad";
 import type { WorldScene } from "@/scenes/WorldScene";
-import { centerFixedLayout, attachFpsOverlay } from "@/config";
+import { centerFixedLayout, attachFpsOverlay, SPRITE_SCALE } from "@/config";
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 const W = 480, H = 320;
@@ -160,11 +160,11 @@ export class BattleScene extends Phaser.Scene {
     // Battle sprites
     this.wildSprite = this.add
       .image(WILD_X, WILD_Y, `creature-front-${wildSpeciesId}`)
-      .setOrigin(0.5, 1);
+      .setOrigin(0.5, 1).setScale(SPRITE_SCALE);
     this.pcSprite = this.add
       .image(PLYR_X, PLYR_Y, `creature-back-${this.pc.speciesId}`)
-      .setOrigin(0.5, 1);
-    if (this.boss) this.wildSprite.setScale(1.35);
+      .setOrigin(0.5, 1).setScale(SPRITE_SCALE);
+    if (this.boss) this.wildSprite.setScale(1.35 * SPRITE_SCALE);
     anchor(this.wildSprite);
     anchor(this.pcSprite);
     playEntrance(this, this.wildSprite, 1);

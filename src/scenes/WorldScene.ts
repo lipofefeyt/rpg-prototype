@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { type Direction } from "@/types";
 import { TILE_SIZE, ANIM_BASE, MS_PER_GAME_MINUTE, TILE_GRASS, TILE_PATH, TILE_TALLGRASS, TILE_CAVE_FLOOR } from "@/constants";
-import { ENCOUNTER_RATE_MULT, attachFpsOverlay, applyScreenScale, CANVAS_W, CANVAS_H } from "@/config";
+import { ENCOUNTER_RATE_MULT, attachFpsOverlay, applyScreenScale, CANVAS_W, CANVAS_H, SPRITE_SCALE } from "@/config";
 import { ZONES, type ZoneDef, type NpcDef } from "@/data/zones";
 import type { BattleInitData } from "@/scenes/BattleScene";
 import { SCRIPTS } from "@/data/scripts";
@@ -96,7 +96,7 @@ export class WorldScene extends Phaser.Scene {
       this.tileY * TILE_SIZE + TILE_SIZE / 2,
       "player",
       0,
-    ).setDepth(2);
+    ).setDepth(2).setScale(SPRITE_SCALE);
 
     // ── Zone (tilemap + NPCs) ────────────────────────────────────────────────
     this.setupZone(startZone);
@@ -276,7 +276,7 @@ export class WorldScene extends Phaser.Scene {
         def.tileX * TILE_SIZE + TILE_SIZE / 2,
         def.tileY * TILE_SIZE + TILE_SIZE,
         `creature-front-${BOSSES[def.boss].speciesId}`,
-      ).setScale(0.5).setOrigin(0.5, 0.9).setDepth(1);
+      ).setScale(0.5 * SPRITE_SCALE).setOrigin(0.5, 0.9).setDepth(1);
       boss.setVisible(this.isNpcActive(def));
       return boss;
     }
@@ -287,7 +287,7 @@ export class WorldScene extends Phaser.Scene {
       def.tileY * TILE_SIZE + TILE_SIZE / 2,
       key,
       ANIM_BASE[def.facing],
-    ).setDepth(1);
+    ).setDepth(1).setScale(SPRITE_SCALE);
     if (key === "player") spr.setTint(def.tint);
     // Subtle idle bob, desynced per NPC so a town doesn't move in lockstep.
     const bob = this.tweens.add({

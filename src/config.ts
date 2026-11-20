@@ -37,6 +37,8 @@ export const LOGICAL_H = Math.max(GAME_HEIGHT, Math.floor(devH / SCREEN_K));
 export const LOGICAL_W = Math.min(MAX_LOGICAL_WIDTH, Math.max(BASE_WIDTH, Math.floor(devW / SCREEN_K)));
 export const CANVAS_W = LOGICAL_W * SCREEN_K;
 export const CANVAS_H = LOGICAL_H * SCREEN_K;
+/** Display scale for sprites rasterised at SCREEN_K x by gfx/enhance.ts (1 texel = 1 device pixel). */
+export const SPRITE_SCALE = 1 / SCREEN_K;
 
 /**
  * Zoom a scene's main camera by SCREEN_K. With the default origin the zoom is about the screen

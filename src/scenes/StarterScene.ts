@@ -4,7 +4,7 @@ import type { CreatureType } from "@/types";
 import { TYPE_LABELS } from "@/data/typeLabels";
 import { fillPanel, strokePanel, cut } from "@/gfx/panel";
 import { getInventory, setParty, equipItem } from "@/systems/playerState";
-import { BASE_WIDTH, GAME_HEIGHT, centerFixedLayout } from "@/config";
+import { BASE_WIDTH, GAME_HEIGHT, SPRITE_SCALE, centerFixedLayout } from "@/config";
 
 const TYPE_COLORS: Record<CreatureType, string> = {
   grass:    "#4cbb5c", poison:   "#8040c0", fire:     "#e84a35",
@@ -131,7 +131,7 @@ export class StarterScene extends Phaser.Scene {
     for (let i = 0; i < 3; i++) {
       const spr = this.add
         .image(SPR_X[i], SPR_Y, `creature-front-${STARTERS[i].speciesId}`)
-        .setScale(i === this.selected ? 1.65 : 1.2)
+        .setScale((i === this.selected ? 1.65 : 1.2) * SPRITE_SCALE)
         .setAlpha(i === this.selected ? 1.0 : 0.42)
         .setDepth(4);
       this.sprites.push(spr);
@@ -255,7 +255,7 @@ export class StarterScene extends Phaser.Scene {
     for (let i = 0; i < 3; i++) {
       this.tweens.add({
         targets: this.sprites[i],
-        scale: i === this.selected ? 1.65 : 1.2,
+        scale: (i === this.selected ? 1.65 : 1.2) * SPRITE_SCALE,
         alpha: i === this.selected ? 1.0  : 0.42,
         duration: 150,
         ease: "Quad.Out",

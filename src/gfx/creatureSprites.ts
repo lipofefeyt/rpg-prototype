@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { HERO_DRAWERS } from "@/gfx/heroSprites";
+import { enhanceTexture } from "@/gfx/enhance";
 import { drawWardenFront } from "@/gfx/bossSprites";
 import { drawSparkImpFront, drawSparkImpBack } from "@/gfx/sparkImp";
 import {
@@ -32,6 +33,7 @@ function genTexture(scene: Phaser.Scene, key: string, drawFn: DrawFn): void {
   drawFn(g);
   g.generateTexture(key, 64, 64);
   g.destroy();
+  enhanceTexture(scene, key); // now SCREEN_K x larger: display at SPRITE_SCALE
 }
 
 function drawFlitterwingFront(g: Phaser.GameObjects.Graphics): void {

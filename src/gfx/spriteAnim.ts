@@ -196,7 +196,7 @@ export function playTamed(scene: Phaser.Scene, sprite: Phaser.GameObjects.Image,
   resetPose(sprite);
   const b = base(sprite);
   scene.tweens.add({
-    targets: sprite, scale: 0.05, y: b.y - sprite.displayHeight * 0.4, alpha: 0.4, duration: 380, ease: "Back.easeIn",
+    targets: sprite, scale: b.s * 0.05, y: b.y - sprite.displayHeight * 0.4, alpha: 0.4, duration: 380, ease: "Back.easeIn",
     onComplete: () => { sprite.setVisible(false); onDone(); },
   });
 }

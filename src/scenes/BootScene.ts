@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { genCreatureSprites } from "@/gfx/creatureSprites";
+import { enhanceTexture } from "@/gfx/enhance";
 
 // Tileset — 32×48 texture, 2 cols × 3 rows of 16×16 tiles
 //   0: grass  1: tree  2: path  3: water  4: tall-grass  5: cave-floor
@@ -181,11 +182,8 @@ export class BootScene extends Phaser.Scene {
     }
 
     g.generateTexture("player", 48, 64);
-    const tex = this.textures.get("player");
-    for (let row = 0; row < 4; row++)
-      for (let col = 0; col < 3; col++)
-        tex.add(row * 3 + col, 0, col * 16, row * 16, 16, 16);
     g.destroy();
+    enhanceTexture(this, "player", 16, 16); // re-adds the 12 frames (row*3+col) at SCREEN_K x
   }
 
   // ── NPC spritesheet factory ───────────────────────────────────────────────────
@@ -199,11 +197,8 @@ export class BootScene extends Phaser.Scene {
       for (let frame = 0; frame < 3; frame++)
         drawFn(g, frame * 16, dir * 16, dir);
     g.generateTexture(key, 48, 64);
-    const tex = this.textures.get(key);
-    for (let row = 0; row < 4; row++)
-      for (let col = 0; col < 3; col++)
-        tex.add(row * 3 + col, 0, col * 16, row * 16, 16, 16);
     g.destroy();
+    enhanceTexture(this, key, 16, 16);
   }
 
   // ── Elder (white sage robes, long silver hair) ────────────────────────────────
