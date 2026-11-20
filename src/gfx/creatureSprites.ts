@@ -1,6 +1,8 @@
 import Phaser from "phaser";
 import { HERO_DRAWERS } from "@/gfx/heroSprites";
 import { enhanceTexture } from "@/gfx/enhance";
+import { PixelCanvas } from "@/gfx/pixelDraw";
+import { PIXEL_ART, PIXEL_ART_SIZE, PIXEL_ART_K } from "@/gfx/pixelart";
 import { drawWardenFront } from "@/gfx/bossSprites";
 import { drawSparkImpFront, drawSparkImpBack } from "@/gfx/sparkImp";
 import {
@@ -23,9 +25,21 @@ type DrawFn = (g: Phaser.GameObjects.Graphics) => void;
 export function genCreatureSprites(scene: Phaser.Scene): void {
   for (const [idStr, { front, back }] of Object.entries(CREATURE_DRAWERS)) {
     const id = Number(idStr);
-    genTexture(scene, `creature-front-${id}`, front);
-    genTexture(scene, `creature-back-${id}`, back);
+    const art = PIXEL_ART[id];
+    if (art?.front) genPixelTexture(scene, `creature-front-${id}`, art.front); else genTexture(scene, `creature-front-${id}`, front);
+    if (art?.back) genPixelTexture(scene, `creature-back-${id}`, art.back); else genTexture(scene, `creature-back-${id}`, back);
   }
+}
+
+/** Hand-authored art: rasterised on a PIXEL_ART_SIZE canvas (64-unit design space x PIXEL_ART_K), then upscaled to SCREEN_K x (no extra shading). */
+function genPixelTexture(scene: Phaser.Scene, key: string, draw: (c: PixelCanvas) => void): void {
+  const c = new PixelCanvas(PIXEL_ART_SIZE, PIXEL_ART_SIZE, PIXEL_ART_K);
+  draw(c);
+  const tex = scene.textures.createCanvas(key, PIXEL_ART_SIZE, PIXEL_ART_SIZE);
+  if (!tex) throw new Error(`genPixelTexture: could not create ${key}`);
+  tex.getContext().putImageData(new ImageData(c.data, PIXEL_ART_SIZE, PIXEL_ART_SIZE), 0, 0);
+  tex.refresh();
+  enhanceTexture(scene, key, undefined, undefined, true);
 }
 
 function genTexture(scene: Phaser.Scene, key: string, drawFn: DrawFn): void {

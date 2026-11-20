@@ -11,6 +11,9 @@ import { SCREEN_K } from "@/config";
  *   - a light rim on the top/left edges and a shadow rim on the bottom/right edges,
  *   - a gentle top-to-bottom light falloff.
  *
+ * With upscaleOnly (hand-authored pixel art that already has its own lighting and outline) only
+ * the SCREEN_K x upscale is done.
+ *
  * The resulting texture replaces the original under the same key but is SCREEN_K x larger, so
  * every sprite created from it must be displayed at SPRITE_SCALE (see config.ts).
  */
@@ -26,7 +29,7 @@ const luma = (r: number, g: number, b: number): number => 0.299 * r + 0.587 * g 
  * For spritesheets pass the source cell size; frames are re-added with the same row-major
  * numbering and the cell size scaled up.
  */
-export function enhanceTexture(scene: Phaser.Scene, key: string, cellW?: number, cellH?: number): void {
+export function enhanceTexture(scene: Phaser.Scene, key: string, cellW?: number, cellH?: number, upscaleOnly = false): void {
   const K = SCREEN_K;
   const tm = scene.textures;
   const src = tm.get(key).getSourceImage() as HTMLCanvasElement;
@@ -45,7 +48,7 @@ export function enhanceTexture(scene: Phaser.Scene, key: string, cellW?: number,
   }
 
   const cw = (cellW ?? sw) * K, ch = (cellH ?? sh) * K;
-  for (let cy = 0; cy < H; cy += ch) for (let cx = 0; cx < W; cx += cw) shadeCell(px, W, cx, cy, cw, ch);
+  if (!upscaleOnly) for (let cy = 0; cy < H; cy += ch) for (let cx = 0; cx < W; cx += cw) shadeCell(px, W, cx, cy, cw, ch);
 
   tm.remove(key);
   const tex = tm.createCanvas(key, W, H);

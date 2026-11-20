@@ -71,6 +71,9 @@ function num(value: unknown, fallback: number): number {
 export const DEBUG_FPS: boolean = env.VITE_DEBUG_FPS !== undefined ? env.VITE_DEBUG_FPS === "1" : env.DEV;
 /** Multiplier on every zone's wild-encounter probability (0 = none, 2 = double). */
 export const ENCOUNTER_RATE_MULT: number = Math.max(0, num(env.VITE_ENCOUNTER_RATE_MULT, 1));
+/** Test knob: wild encounters cycle through these species ids (comma list; empty = normal random pool). For reviewing art. */
+export const FORCE_SPECIES: number[] = String(env.VITE_FORCE_SPECIES ?? "")
+  .split(",").map(s => Math.floor(Number(s))).filter(n => Number.isFinite(n) && n > 0);
 /** Multiplier on the in-game clock speed (2 = day/night cycle twice as fast). */
 export const CLOCK_SPEED_MULT: number = Math.max(0.01, num(env.VITE_CLOCK_SPEED_MULT, 1));
 

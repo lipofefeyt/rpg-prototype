@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { type Direction } from "@/types";
 import { TILE_SIZE, ANIM_BASE, MS_PER_GAME_MINUTE, TILE_GRASS, TILE_PATH, TILE_TALLGRASS, TILE_CAVE_FLOOR } from "@/constants";
-import { ENCOUNTER_RATE_MULT, attachFpsOverlay, applyScreenScale, CANVAS_W, CANVAS_H, SPRITE_SCALE } from "@/config";
+import { ENCOUNTER_RATE_MULT, FORCE_SPECIES, attachFpsOverlay, applyScreenScale, CANVAS_W, CANVAS_H, SPRITE_SCALE } from "@/config";
 import { ZONES, type ZoneDef, type NpcDef } from "@/data/zones";
 import type { BattleInitData } from "@/scenes/BattleScene";
 import { SCRIPTS } from "@/data/scripts";
@@ -53,6 +53,7 @@ export class WorldScene extends Phaser.Scene {
   private wasd!: Record<Direction, Phaser.Input.Keyboard.Key>;
   private actionKey!: Phaser.Input.Keyboard.Key;
   private menuKeys: Phaser.Input.Keyboard.Key[] = [];
+  private forcedCount = 0; // round-robin index for VITE_FORCE_SPECIES
   private pendingMenu: "shop" | "inn" | null = null;
   private pendingShop = "village";
   private questMarkers: Phaser.GameObjects.Text[] = [];
@@ -437,7 +438,9 @@ export class WorldScene extends Phaser.Scene {
     const pool = this.currentZone.encounterPool;
     if (!pool.length || Math.random() > this.currentZone.encounterRate * ENCOUNTER_RATE_MULT) return;
 
-    const entry = pickByWeight(pool);
+    const entry = FORCE_SPECIES.length
+      ? { speciesId: FORCE_SPECIES[this.forcedCount++ % FORCE_SPECIES.length], minLevel: 3, maxLevel: 5, weight: 1 }
+      : pickByWeight(pool);
     const level = Phaser.Math.Between(entry.minLevel, entry.maxLevel);
 
     const initData: BattleInitData = {
