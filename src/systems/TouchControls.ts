@@ -16,11 +16,17 @@ const LABEL_STYLE  = { fontSize: "13px", color: "#aaccff", fontFamily: "monospac
  */
 export class TouchControls {
   private readonly buttons: Phaser.GameObjects.Rectangle[] = [];
+  private readonly buttonDirs: (keyof Pick<TouchState, "up" | "down" | "left" | "right">)[] = [];
+  private readonly scene: Phaser.Scene;
+  private readonly state: TouchState;
+  private visible = true;
   private readonly actionButton: Phaser.GameObjects.Arc;
   private readonly menuButton: Phaser.GameObjects.Rectangle;
   private readonly labels: Phaser.GameObjects.Text[] = [];
 
   constructor(scene: Phaser.Scene, state: TouchState) {
+    this.scene = scene;
+    this.state = state;
     const W = LOGICAL_W;
     const H = LOGICAL_H;
     const depth = 90; // below DialogueBox (100), above the world
@@ -42,12 +48,12 @@ export class TouchControls {
       const rect = scene.add.rectangle(spec.x, spec.y, btn, btn, PANEL_FILL, PANEL_ALPHA)
         .setStrokeStyle(2, STROKE_COLOR, 1)
         .setScrollFactor(0)
-        .setDepth(depth)
-        .setInteractive({ useHandCursor: false });
-      rect.on("pointerdown", () => { state[spec.dir] = true; });
-      rect.on("pointerup",   () => { state[spec.dir] = false; });
-      rect.on("pointerout",  () => { state[spec.dir] = false; });
+        .setDepth(depth);
+      // Held directions are polled from the live pointers every frame (poll()), not tracked from
+      // down/up events: a release that happens while the controls are hidden (battle or dialogue
+      // starting under the thumb) never produced an "up", which left a direction stuck on.
       this.buttons.push(rect);
+      this.buttonDirs.push(spec.dir);
 
       const label = scene.add.text(spec.x, spec.y, spec.label, LABEL_STYLE)
         .setOrigin(0.5)
@@ -85,11 +91,30 @@ export class TouchControls {
     );
   }
 
-  setVisible(visible: boolean): void {
-    for (const b of this.buttons) {
-      b.setVisible(visible);
-      if (visible) b.setInteractive({ useHandCursor: false }); else b.disableInteractive();
+  /**
+   * Call every frame: sets up/down/left/right from whichever pointers are currently down over a
+   * d-pad button (stateless, so it cannot get stuck), and clears them while the controls are hidden.
+   */
+  poll(): void {
+    const dirs = { up: false, down: false, left: false, right: false };
+    if (this.visible) {
+      const cam = this.scene.cameras.main;
+      for (const p of this.scene.input.manager.pointers) {
+        if (!p.isDown) continue;
+        const pt = cam.getWorldPoint(p.x, p.y);
+        this.buttons.forEach((b, i) => {
+          const r = b.getBounds();
+          if (pt.x >= r.x - 3 && pt.x <= r.right + 3 && pt.y >= r.y - 3 && pt.y <= r.bottom + 3) dirs[this.buttonDirs[i]] = true;
+        });
+      }
     }
+    this.state.up = dirs.up; this.state.down = dirs.down; this.state.left = dirs.left; this.state.right = dirs.right;
+  }
+
+  setVisible(visible: boolean): void {
+    this.visible = visible;
+    if (!visible) { this.state.up = this.state.down = this.state.left = this.state.right = false; }
+    for (const b of this.buttons) b.setVisible(visible);
     this.menuButton.setVisible(visible);
     if (visible) this.menuButton.setInteractive({ useHandCursor: false }); else this.menuButton.disableInteractive();
     this.actionButton.setVisible(visible);

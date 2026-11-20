@@ -47,6 +47,7 @@ export class UIScene extends Phaser.Scene {
   }
 
   update() {
+    this.touchControls.poll();
     if (this.openCooldown > 0) {
       this.openCooldown--;
       return;
