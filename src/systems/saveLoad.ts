@@ -20,7 +20,7 @@ export interface WorldSaveState {
   direction: Direction;
 }
 
-interface SaveData extends WorldSaveState {
+export interface SaveData extends WorldSaveState {
   version: number;
   party: ReturnType<typeof getParty>;
   inventory: ReturnType<typeof getInventory>;

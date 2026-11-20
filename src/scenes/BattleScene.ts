@@ -98,6 +98,8 @@ export class BattleScene extends Phaser.Scene {
 
   private msgText!: Phaser.GameObjects.Text;
   private btnGfx!: Phaser.GameObjects.Graphics;
+  private backBtn!: Phaser.GameObjects.Rectangle;
+  private backLabel!: Phaser.GameObjects.Text;
   private btnLabels: Phaser.GameObjects.Text[] = [];
 
   // Generic 2x2 selectable grid, reused for move-select / item-select / party-select.
@@ -195,6 +197,13 @@ export class BattleScene extends Phaser.Scene {
       );
     }
 
+    // BACK button for touch players (shown only while a grid with a cancel action is up)
+    this.backBtn = this.add.rectangle(W - 44, UI_Y + 18, 80, 24, 0x0d1a3a)
+      .setStrokeStyle(1.5, 0x4488ff).setVisible(false);
+    this.backLabel = this.add.text(W - 44, UI_Y + 18, "BACK", {
+      fontSize: "11px", color: "#aaccff", fontFamily: "monospace",
+    }).setOrigin(0.5).setVisible(false);
+
     // Generic grid (move / item / party select)
     this.gridGfx = this.add.graphics();
     for (let i = 0; i < 4; i++) {
@@ -220,6 +229,7 @@ export class BattleScene extends Phaser.Scene {
     this.downKey = this.input.keyboard!.addKey(KC.DOWN);
     this.leftKey  = this.input.keyboard!.addKey(KC.LEFT);
     this.rightKey = this.input.keyboard!.addKey(KC.RIGHT);
+    this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.handleTap(p));
 
     // Intro
     this.hideActionButtons();
@@ -233,6 +243,47 @@ export class BattleScene extends Phaser.Scene {
     if (this.msgWaiting) { if (JD(this.zKey)) this.advanceMsg(); return; }
     if (this.state === "menu") this.handleMenuInput();
     else this.handleGridInput(); // move-select / item-select / party-select(-forced)
+  }
+
+  // ── Touch input ───────────────────────────────────────────────────────────
+
+  /**
+   * Single entry point for taps, routed exactly like update() routes the keyboard:
+   * a waiting message advances, otherwise the tap picks a button of the action menu or
+   * of the current grid (the cell is highlighted, then confirmed), or hits BACK.
+   */
+  private handleTap(p: Phaser.Input.Pointer) {
+    if (this.msgWaiting) { this.advanceMsg(); return; }
+    const pt = this.cameras.main.getWorldPoint(p.x, p.y);
+    const cell = this.cellAt(pt.x, pt.y);
+
+    if (this.state === "menu") {
+      if (this.btnGfx.visible && cell >= 0) {
+        this.cursor = cell;
+        this.redrawActionButtons();
+        this.confirmMenu();
+      }
+      return;
+    }
+    if (!this.gridGfx.visible) return;
+    if (this.onGridCancel && this.backBtn.visible && this.backBtn.getBounds().contains(pt.x, pt.y)) {
+      this.onGridCancel();
+      return;
+    }
+    if (cell >= 0) {
+      this.cursor = cell;
+      this.redrawGrid();
+      this.onGridConfirm?.(cell);
+    }
+  }
+
+  /** Index (0-3) of the 2x2 button cell under scene point (x, y), or -1. */
+  private cellAt(x: number, y: number): number {
+    for (let i = 0; i < 4; i++) {
+      const bx = BTN_COLS[i % 2], by = BTN_ROWS[Math.floor(i / 2)];
+      if (x >= bx && x <= bx + BTN_W && y >= by && y <= by + BTN_H) return i;
+    }
+    return -1;
   }
 
   // ── Message system ────────────────────────────────────────────────────────
@@ -294,6 +345,8 @@ export class BattleScene extends Phaser.Scene {
     this.onGridConfirm = onConfirm;
     this.onGridCancel = onCancel;
     this.gridGfx.setVisible(true);
+    this.backBtn.setVisible(!!onCancel);
+    this.backLabel.setVisible(!!onCancel);
     for (let i = 0; i < 4; i++) {
       const e = entries[i];
       this.gridLabels[i].setText(e?.label ?? "—").setVisible(true);
@@ -304,6 +357,8 @@ export class BattleScene extends Phaser.Scene {
 
   private hideGrid() {
     this.gridGfx.clear().setVisible(false);
+    this.backBtn.setVisible(false);
+    this.backLabel.setVisible(false);
     this.gridLabels.forEach(l => l.setVisible(false));
     this.gridSubLabels.forEach(l => l.setVisible(false));
   }

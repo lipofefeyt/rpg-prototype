@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { loadGame, applySaveToRegistry } from "@/systems/saveLoad";
+import { loadGame } from "@/systems/saveLoad";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -44,12 +44,10 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   async create() {
+    // Only look for a save here; TitleScene applies it if the player picks CONTINUE
+    // (so NEW GAME starts from a clean registry).
     const save = await loadGame();
-    if (save) {
-      this.game.registry.set("resumeState", applySaveToRegistry(this.game, save));
-      this.scene.start("WorldScene");
-    } else {
-      this.scene.start("StarterScene");
-    }
+    if (save) this.game.registry.set("pendingSave", save);
+    this.scene.start("TitleScene");
   }
 }

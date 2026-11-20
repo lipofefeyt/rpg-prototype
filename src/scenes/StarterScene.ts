@@ -53,6 +53,12 @@ const HL_W  = 98;
 const HL_H  = 142;
 const HL_TOP = 68;
 
+// CHOOSE button (bottom centre) and touch gesture thresholds, in logical px
+const CHOOSE_W = 150, CHOOSE_H = 19;
+const CHOOSE_X = (BASE_WIDTH - CHOOSE_W) / 2, CHOOSE_Y = 299;
+const SWIPE_MIN = 30; // horizontal travel that counts as a swipe
+const TAP_MAX   = 14; // movement under this counts as a tap
+
 export class StarterScene extends Phaser.Scene {
   private cursors!:    Phaser.Types.Input.Keyboard.CursorKeys;
   private leftKey!:    Phaser.Input.Keyboard.Key;
@@ -64,7 +70,8 @@ export class StarterScene extends Phaser.Scene {
   private highlight!: Phaser.GameObjects.Graphics;
   private nameText!:  Phaser.GameObjects.Text;
   private descText!:  Phaser.GameObjects.Text;
-  private badges:     Phaser.GameObjects.Text[] = [];
+  private chooseText!: Phaser.GameObjects.Text;
+  private badges:    Phaser.GameObjects.Text[] = [];
   private canInput  = false;
   private confirmed = false;
 
@@ -151,16 +158,43 @@ export class StarterScene extends Phaser.Scene {
       fontFamily: "monospace", align: "center",
     }).setOrigin(0.5).setDepth(5);
 
-    // ── Controls hint ────────────────────────────────────────────────────────
-    this.add.text(W / 2, 307, "◄  A / Left     Right / D  ►          Z  Select", {
+    // ── Touch UI: side arrows + CHOOSE button (swipe / tap a class also work) ─
+    for (const [x, ch] of [[16, "◄"], [W - 16, "►"]] as const) {
+      this.add.text(x, SPR_Y, ch, { fontSize: "20px", color: "#4a63b8", fontFamily: "monospace" })
+        .setOrigin(0.5).setDepth(5);
+    }
+    const btn = this.add.graphics().setDepth(5);
+    btn.fillStyle(0x1a3a7a, 0.95);
+    fillPanel(btn, CHOOSE_X, CHOOSE_Y, CHOOSE_W, CHOOSE_H, cut(5));
+    btn.fillStyle(0x4488ff, 1);
+    strokePanel(btn, CHOOSE_X, CHOOSE_Y, CHOOSE_W, CHOOSE_H, cut(5), 1);
+    this.chooseText = this.add.text(CHOOSE_X + CHOOSE_W / 2, CHOOSE_Y + CHOOSE_H / 2, "", {
+      fontSize: "10px", color: "#ffffff", fontFamily: "monospace", fontStyle: "bold",
+    }).setOrigin(0.5).setDepth(6);
+    this.add.text(10, CHOOSE_Y + CHOOSE_H / 2, "◄ ► / A D   Z", {
       fontSize: "8px", color: "#252e4a", fontFamily: "monospace",
-    }).setOrigin(0.5).setDepth(5);
+    }).setOrigin(0, 0.5).setDepth(5);
 
     // ── Input ────────────────────────────────────────────────────────────────
     this.cursors    = this.input.keyboard!.createCursorKeys();
     this.leftKey    = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A);
     this.rightKey   = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D);
     this.confirmKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+
+    // Touch / mouse: swipe or tap an arrow to browse; tap a class to pick it, tap it again
+    // (or the CHOOSE button) to confirm. Decided on release so a swipe never counts as a tap.
+    this.input.on("pointerup", (p: Phaser.Input.Pointer) => {
+      if (!this.canInput || this.confirmed) return;
+      const dx = p.upX - p.downX;
+      const dy = p.upY - p.downY;
+      if (Math.abs(dx) >= SWIPE_MIN && Math.abs(dx) > Math.abs(dy)) {
+        this.step(dx < 0 ? 1 : -1); // swipe left reveals the class on the right
+        return;
+      }
+      if (Math.hypot(dx, dy) > TAP_MAX) return;
+      const pt = this.cameras.main.getWorldPoint(p.upX, p.upY);
+      this.tapAt(pt.x, pt.y);
+    });
 
     this.refreshDisplay();
 
@@ -176,13 +210,34 @@ export class StarterScene extends Phaser.Scene {
     const goRight = Phaser.Input.Keyboard.JustDown(this.cursors.right!)
                  || Phaser.Input.Keyboard.JustDown(this.rightKey);
 
-    if (goLeft)  { this.selected = (this.selected + 2) % 3; this.refreshDisplay(); }
-    if (goRight) { this.selected = (this.selected + 1) % 3; this.refreshDisplay(); }
+    if (goLeft)  this.step(-1);
+    if (goRight) this.step(1);
 
     if (Phaser.Input.Keyboard.JustDown(this.confirmKey)) this.confirm();
   }
 
   // ── Private ──────────────────────────────────────────────────────────────────
+
+  private step(dir: 1 | -1): void {
+    this.selected = (this.selected + dir + 3) % 3;
+    this.refreshDisplay();
+  }
+
+  /** A tap at scene coordinates (x, y), already converted from screen space. */
+  private tapAt(x: number, y: number): void {
+    const inRect = (rx: number, ry: number, rw: number, rh: number) =>
+      x >= rx && x <= rx + rw && y >= ry && y <= ry + rh;
+
+    if (inRect(CHOOSE_X, CHOOSE_Y, CHOOSE_W, CHOOSE_H)) { this.confirm(); return; }
+    if (inRect(-20, HL_TOP, 54, HL_H)) { this.step(-1); return; }                // left arrow strip
+    if (inRect(BASE_WIDTH - 34, HL_TOP, 54, HL_H)) { this.step(1); return; }     // right arrow strip
+    for (let i = 0; i < 3; i++) {
+      if (!inRect(SPR_X[i] - HL_W / 2, HL_TOP, HL_W, HL_H)) continue;
+      if (i === this.selected) this.confirm();
+      else { this.selected = i; this.refreshDisplay(); }
+      return;
+    }
+  }
 
   private refreshDisplay(): void {
     const W       = BASE_WIDTH;
@@ -209,6 +264,7 @@ export class StarterScene extends Phaser.Scene {
 
     // Name
     this.nameText.setText(starter.name.toUpperCase());
+    this.chooseText.setText(`CHOOSE ${starter.name.toUpperCase()}`);
 
     // Type badges — centered, 1 or 2 types
     const types = starter.types;

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { BootScene } from "@/scenes/BootScene";
 import { PreloadScene } from "@/scenes/PreloadScene";
+import { TitleScene } from "@/scenes/TitleScene";
 import { StarterScene } from "@/scenes/StarterScene";
 import { WorldScene } from "@/scenes/WorldScene";
 import { BattleScene } from "@/scenes/BattleScene";
@@ -19,7 +20,7 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   backgroundColor: "#000",
-  scene: [BootScene, PreloadScene, StarterScene, WorldScene, BattleScene, UIScene, MenuScene],
+  scene: [BootScene, PreloadScene, TitleScene, StarterScene, WorldScene, BattleScene, UIScene, MenuScene],
   physics: {
     default: "arcade",
     arcade: { debug: false },
