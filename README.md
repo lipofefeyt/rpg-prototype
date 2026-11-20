@@ -20,10 +20,21 @@ use the on-screen d-pad, A and MENU buttons.
 
 The Android project lives in `android/` (app id `com.example.rpgprototype`, name **Emberhold**).
 
-**In Android Studio:** double-click `open-in-android-studio.bat` (or *File > Open* and choose the
-`android` folder inside this repo - *not* some other project), let Gradle sync, pick your device
-and press Run on the `app` configuration. After changing game code, run
-`npm run build && npx cap sync android` first so the new bundle is copied into the app.
+**Quick start (Android Studio):**
+
+1. `npm install` once in the repo root, then `npx cap sync android` (creates the generated Capacitor files).
+2. In Android Studio use *File > Open* and choose the **`android`** folder (not the repo root);
+   `open-in-android-studio.bat` does the same. **Set *Settings > Build > Tools > Gradle > Gradle JDK*
+   to a Java 21 JBR** (pick `jbr-21`, or *Download JDK...* > JetBrains Runtime 21). Studio's default
+   JDK is Java 25, which Gradle 8.14 rejects ("Incompatible Gradle JVM version"); the sync then fails
+   silently into a half-set-up project and no Android run configuration can be created.
+3. Let Gradle sync, pick your phone in the device picker.
+4. Run **Emberhold (S25)**. Debug builds rebuild the web bundle first (`npm run build:s25`), so you
+   always get the current game code. Pass `-PskipWebBuild=true` to skip that (e.g. for live reload).
+
+`node_modules` is installed per OS. The automatic web build runs only if the build tools for the OS
+running Gradle are present; otherwise it prints a warning and you run `npm run build:s25` yourself
+(e.g. from WSL) before pressing Run.
 
 **From the command line (WSL):** `scripts/android-build.sh` builds the debug APK;
 add `--install` to also install it on a connected device. The APK ends up at

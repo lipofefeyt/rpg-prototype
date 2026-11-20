@@ -3,6 +3,7 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.example.rpgprototype"
     compileSdk = rootProject.ext.compileSdkVersion
+    buildToolsVersion = rootProject.ext.buildToolsVersion
     defaultConfig {
         applicationId "com.example.rpgprototype"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -52,6 +53,33 @@ dependencies {
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
 }
+
+// Rebuild the web bundle and copy it into the app before every debug build, so pressing Run in Android
+// Studio always installs the current game code (uses `npm run build:s25` = tsc + vite + cap sync).
+// Skip with -PskipWebBuild=true (e.g. live reload via CAP_SERVER_URL, or when you built it yourself).
+def isWindows = org.gradle.internal.os.OperatingSystem.current().isWindows()
+def repoRoot = rootProject.projectDir.parentFile
+def nativeToolsPresent = {
+    // node_modules is installed per OS: Windows Gradle needs the win32 build tools, WSL/Linux the linux ones.
+    new File(repoRoot, "node_modules/@esbuild/" + (isWindows ? "win32-x64" : "linux-x64")).exists()
+}
+tasks.register('syncWebAssets', Exec) {
+    group = 'build'
+    description = 'Builds the web bundle (npm run build:s25) and copies it into the Android project.'
+    workingDir repoRoot
+    commandLine(isWindows ? ['cmd', '/c', 'npm', 'run', 'build:s25'] : ['npm', 'run', 'build:s25'])
+    onlyIf {
+        if (project.findProperty('skipWebBuild') == 'true') return false
+        if (!nativeToolsPresent()) {
+            logger.warn("syncWebAssets skipped: node_modules has no build tools for this OS. " +
+                "Run `npm run build:s25` yourself (from WSL if that is where you ran npm install), " +
+                "or run `npm install` from a ${isWindows ? 'Windows' : 'Linux'} terminal.")
+            return false
+        }
+        return true
+    }
+}
+tasks.matching { it.name == 'preDebugBuild' }.configureEach { dependsOn 'syncWebAssets' }
 
 apply from: 'capacitor.build.gradle'
 

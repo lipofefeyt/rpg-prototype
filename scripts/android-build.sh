@@ -16,7 +16,7 @@ fi
 
 npm run build
 npx cap sync android
-( cd android && ./gradlew assembleDebug --console=plain )
+( cd android && ./gradlew assembleDebug -PskipWebBuild=true --console=plain )
 
 APK="android/app/build/outputs/apk/debug/app-debug.apk"
 echo
