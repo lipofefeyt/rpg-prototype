@@ -6,6 +6,7 @@ import { ZONES, type ZoneDef, type NpcDef } from "@/data/zones";
 import type { BattleInitData } from "@/scenes/BattleScene";
 import { SCRIPTS } from "@/data/scripts";
 import { createGroundImages } from "@/gfx/groundArt";
+import { fitSpriteScale } from "@/gfx/spriteScale";
 import { BOSSES, bossFlag } from "@/data/bosses";
 import { hasFlag } from "@/systems/playerState";
 import { getTouchState, type TouchState } from "@/systems/touchInput";
@@ -281,11 +282,12 @@ export class WorldScene extends Phaser.Scene {
   private spawnNpc(def: NpcDef): Phaser.GameObjects.Sprite {
     if (def.boss) {
       // Bosses reuse their battle art, scaled down to a 2-tile-tall presence in the world.
+      const bossKey = `creature-front-${BOSSES[def.boss].speciesId}`;
       const boss = this.add.sprite(
         def.tileX * TILE_SIZE + TILE_SIZE / 2,
         def.tileY * TILE_SIZE + TILE_SIZE,
-        `creature-front-${BOSSES[def.boss].speciesId}`,
-      ).setScale(0.5 * SPRITE_SCALE).setOrigin(0.5, 0.9).setDepth(1);
+        bossKey,
+      ).setScale(fitSpriteScale(this, bossKey, 34)).setOrigin(0.5, 0.9).setDepth(1);
       boss.setVisible(this.isNpcActive(def));
       return boss;
     }

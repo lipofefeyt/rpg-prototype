@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { drawPanel } from "@/gfx/panel";
-import { BASE_WIDTH, GAME_HEIGHT, centerFixedLayout, attachFpsOverlay } from "@/config";
+import { BASE_WIDTH, GAME_HEIGHT, ART_GALLERY, centerFixedLayout, attachFpsOverlay } from "@/config";
 import { applySaveToRegistry, type SaveData } from "@/systems/saveLoad";
 
 interface TitleOption {
@@ -30,6 +30,7 @@ export class TitleScene extends Phaser.Scene {
   constructor() { super({ key: "TitleScene" }); }
 
   create() {
+    if (ART_GALLERY) { this.scene.start("GalleryScene"); return; }
     this.selected = 0;
     this.canInput = false;
     this.leaving = false;

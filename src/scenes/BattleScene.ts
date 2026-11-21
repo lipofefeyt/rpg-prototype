@@ -167,7 +167,7 @@ export class BattleScene extends Phaser.Scene {
     this.pcSprite = this.add
       .image(PLYR_X, PLYR_Y, `creature-back-${this.pc.speciesId}`)
       .setOrigin(0.5, 1).setScale(SPRITE_SCALE);
-    if (this.boss) this.wildSprite.setScale(1.35 * SPRITE_SCALE);
+    if (this.boss) this.wildSprite.setScale(1.15 * SPRITE_SCALE); // bosses show a little larger than regular monsters
     anchor(this.wildSprite);
     anchor(this.pcSprite);
     playEntrance(this, this.wildSprite, 1);

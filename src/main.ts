@@ -8,6 +8,7 @@ import { WorldScene } from "@/scenes/WorldScene";
 import { BattleScene } from "@/scenes/BattleScene";
 import { UIScene } from "@/scenes/UIScene";
 import { MenuScene } from "@/scenes/MenuScene";
+import { GalleryScene } from "@/scenes/GalleryScene";
 import { CANVAS_W, CANVAS_H } from "@/config";
 import { installCrispText } from "@/gfx/crispText";
 
@@ -24,7 +25,7 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   backgroundColor: "#000",
-  scene: [BootScene, PreloadScene, TitleScene, StarterScene, WorldScene, BattleScene, UIScene, MenuScene],
+  scene: [BootScene, PreloadScene, TitleScene, StarterScene, WorldScene, BattleScene, UIScene, MenuScene, GalleryScene],
   physics: {
     default: "arcade",
     arcade: { debug: false },

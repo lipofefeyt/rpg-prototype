@@ -71,6 +71,8 @@ function num(value: unknown, fallback: number): number {
 export const DEBUG_FPS: boolean = env.VITE_DEBUG_FPS !== undefined ? env.VITE_DEBUG_FPS === "1" : env.DEV;
 /** Multiplier on every zone's wild-encounter probability (0 = none, 2 = double). */
 export const ENCOUNTER_RATE_MULT: number = Math.max(0, num(env.VITE_ENCOUNTER_RATE_MULT, 1));
+/** Test knob: open the art gallery (every battle sprite on one screen) instead of the title screen. */
+export const ART_GALLERY: boolean = env.VITE_ART_GALLERY === "1";
 /** Test knob: wild encounters cycle through these species ids (comma list; empty = normal random pool). For reviewing art. */
 export const FORCE_SPECIES: number[] = String(env.VITE_FORCE_SPECIES ?? "")
   .split(",").map(s => Math.floor(Number(s))).filter(n => Number.isFinite(n) && n > 0);

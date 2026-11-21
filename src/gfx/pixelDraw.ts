@@ -257,6 +257,25 @@ export class PixelCanvas {
     return this;
   }
 
+  /** Mirrors the whole picture left-to-right (e.g. a profile that should face the other way). */
+  flipX(): this {
+    for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w >> 1; x++) {
+      const i = (y * this.w + x) * 4, j = (y * this.w + (this.w - 1 - x)) * 4;
+      for (let k = 0; k < 4; k++) { const t = this.data[i + k]; this.data[i + k] = this.data[j + k]; this.data[j + k] = t; }
+    }
+    return this;
+  }
+
+  /** Remaps every opaque pixel's colour (used for palette-swapped variants of a creature). */
+  recolor(fn: (r: number, g: number, b: number) => [number, number, number]): this {
+    for (let i = 0; i < this.data.length; i += 4) {
+      if (!this.data[i + 3]) continue;
+      const [r, g, b] = fn(this.data[i], this.data[i + 1], this.data[i + 2]);
+      this.data[i] = r; this.data[i + 1] = g; this.data[i + 2] = b;
+    }
+    return this;
+  }
+
   /** Final 1px silhouette outline, tinted from the neighbouring colour (skips already-dark edges). */
   outline(strength = 0.62): this {
     const add: [number, number, number][] = [];
